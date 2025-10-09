@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
-import { useMenuStore } from "@/store/zustandStores";
+import React, { useEffect, useState, useMemo } from "react";
 import { useOrderFlowStore } from "@/store/zustandStores";
 import { useNavigate, useLocation } from "react-router-dom";
 import ItemDetailsModal from "@/components/common/ItemDetailsModal";
@@ -10,7 +9,7 @@ import floorIcon from "@/assets/floor_icon.svg";
 import tableIcon from "@/assets/table_filled_icon.svg";
 import TrashIcon from "@/assets/Trash.svg";
 import { SuccessModal } from "@/components/common/SuccessModal";
-import successIcon from '@/assets/order/success_icon_large.svg'
+import successIcon from '@/assets/order/success_icon_large.svg';
 import { createOrder, updateOrder } from '@/api/orderApi';
 import type { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from '@/types/order';
 import OrderSummaryModal from '@/components/common/OrderSummaryModal';
@@ -21,19 +20,11 @@ import ReadyToScanModal from '@/components/common/ReadyToScanModal';
 import ReadyToPayModal from '@/components/common/ReadyToPayModal';
 import PaymentDoneModal from '@/components/common/PaymentDoneModal';
 import { tableTrainingSteps } from '@/walkthrough/steps';
-
-const categories = [
-  { label: "All Items", value: "all" },
-  { label: "Burgers", value: "Burger", icon: "🍔" },
-  { label: "Beverages", value: "Beverage", icon: "🥤" },
-  { label: "Crispy", value: "Crispy", icon: "🍗" },
-  { label: "Nuggets", value: "Nugget", icon: "🍖" },
-];
+import { useGetAllItemsQuery, useGetAllItemTypesQuery, useGetItemTypeByIdQuery } from "@/redux/api/quickOrderSlice";
 
 const floors = ["F-01", "F-02", "F-03", "F-04", "F-05", "F-06"];
 
 const Orders: React.FC = () => {
-  const { menuItems, fetchMenuItems, loading } = useMenuStore();
   const {
     currentOrder,
     pendingItem,
@@ -65,14 +56,13 @@ const Orders: React.FC = () => {
   const [selectedFloor, setSelectedFloor] = useState("F-01");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [showFloorPersonsPanel, setShowFloorPersonsPanel] = useState(false);
-
   const [orderSending, setOrderSending] = useState(false);
-
   const [showSummaryPanel, setShowSummaryPanel] = useState(false);
-
   const [showOrderSummaryModal, setShowOrderSummaryModal] = useState(false);
-  // const [showPaymentDone, setShowPaymentDone] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [showReadyToScan, setShowReadyToScan] = useState(false);
+  const [showReadyToPay, setShowReadyToPay] = useState(false);
 
   const selectedCategory = useWalkthroughUIStore((s) => s.selectedCategory);
   const setSelectedCategory = useWalkthroughUIStore((s) => s.setSelectedCategory);
@@ -80,9 +70,54 @@ const Orders: React.FC = () => {
   const { steps, currentStep, isActive, next } = useWalkthroughStore();
   const [orderSummaryClickable, setOrderSummaryClickable] = useState(true);
 
-  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
-  const [showReadyToScan, setShowReadyToScan] = useState(false);
-  const [showReadyToPay, setShowReadyToPay] = useState(false);
+  // Fetch item types and items using RTK Query
+  const { data: itemTypesData, isLoading: itemTypesLoading, error: itemTypesError } = useGetAllItemTypesQuery('');
+  const { data: itemsData, isLoading: itemsLoading, error: itemsError } = useGetAllItemsQuery('');
+  const [selectedItemTypeId, setSelectedItemTypeId] = useState<string | null>(null);
+  const { data: selectedItemType, isLoading: selectedItemTypeLoading, error: selectedItemTypeError } = useGetItemTypeByIdQuery(selectedItemTypeId, { skip: !selectedItemTypeId });
+
+  // Map categories dynamically from itemTypesData
+  const categories = useMemo(() => [
+    { label: "All Items", value: "all", icon: null },
+    ...(itemTypesData?.data?.map((type: any) => ({
+      label: type.Name,
+      value: type.Items_types_id.toString(),
+      icon: type.emozi,
+    })) || []),
+  ], [itemTypesData]);
+
+  // Map menu items for display (from getAllItemsQuery)
+  const menuItems = useMemo(() => itemsData?.data?.map((item: any) => ({
+    itemId: item.Items_id.toString(),
+    name: item['item-name'],
+    price: item['item-price'],
+    image: item.image,
+    itemType: item.Items_types_id.Items_types_id.toString(),
+    preparationStation: item.Items_types_id.Name === "Beverages" ? "Counter" : "Kitchen",
+  })) || [], [itemsData]);
+
+  // Map items from selectedItemType (getItemTypeByIdQuery)
+  const categoryItems = useMemo(() => selectedItemType?.data?.map((item: any) => ({
+    itemId: item.Items_id.toString(),
+    name: item['item-name'],
+    price: item['item-price'],
+    image: item.image,
+    itemType: item.Items_types_id.Items_types_id.toString(),
+    preparationStation: item.Items_types_id.Name === "Beverages" ? "Counter" : "Kitchen",
+  })) || [], [selectedItemType]);
+
+  // Memoized filtered items based on selected category
+  const filteredItems = useMemo(() => {
+    if (selectedCategory === "all") {
+      return menuItems;
+    }
+    return categoryItems;
+  }, [selectedCategory, menuItems, categoryItems]);
+
+  // Combined loading state
+  const isLoading = itemTypesLoading || itemsLoading || selectedItemTypeLoading;
+  // Combined error state
+  const hasError = itemTypesError || itemsError || selectedItemTypeError;
 
   console.log("[Orders render]", {
     selectedTable,
@@ -91,6 +126,13 @@ const Orders: React.FC = () => {
     showOrderSentPanel,
     showConfirmationModal,
     showFloorPersonsPanel,
+    selectedCategory,
+    selectedItemTypeId,
+    menuItems,
+    filteredItems,
+    selectedItemType,
+    isLoading,
+    hasError,
   });
 
   // Force enable order summary button during walkthrough
@@ -100,16 +142,12 @@ const Orders: React.FC = () => {
     }
   }, [isActive, steps, currentStep]);
 
-  useEffect(() => {
-    fetchMenuItems();
-  }, [fetchMenuItems]);
-
-  // Set that we're in order flow when this component mounts
+  // Set in-order flow
   useEffect(() => {
     setInOrderFlow(true);
   }, [setInOrderFlow]);
 
-  // If a pendingItem exists and currentOrder just became available, open modals for it
+  // Handle pending item
   useEffect(() => {
     if (pendingItem && currentOrder) {
       setModalItem(pendingItem);
@@ -117,16 +155,15 @@ const Orders: React.FC = () => {
     }
   }, [pendingItem, currentOrder]);
 
-  // If a pendingCustomizedItem exists and a table is selected, add it to the order
+  // Handle pending customized item
   useEffect(() => {
     if (pendingCustomizedItem && selectedTable && currentOrder) {
       addItemToOrder(pendingCustomizedItem);
       clearPendingCustomizedItem();
     }
-    // eslint-disable-next-line
   }, [pendingCustomizedItem, selectedTable, currentOrder]);
 
-  // If a pending customized item exists and table is selected, start the order automatically (item-first flow)
+  // Auto-start order for item-first flow
   useEffect(() => {
     if (pendingCustomizedItem && selectedTable && !currentOrder) {
       console.log("[Effect] Auto-start order (item-first flow)", {
@@ -136,16 +173,9 @@ const Orders: React.FC = () => {
       });
       startOrder({ tableId: selectedTable, floor: selectedFloor, persons });
     }
-    // eslint-disable-next-line
-  }, [
-    pendingCustomizedItem,
-    selectedTable,
-    currentOrder,
-    selectedFloor,
-    persons,
-  ]);
+  }, [pendingCustomizedItem, selectedTable, currentOrder, selectedFloor, persons]);
 
-  // Sync local state with currentOrder from store
+  // Sync local state with currentOrder
   useEffect(() => {
     if (currentOrder && currentOrder.tableId) {
       setSelectedTable(currentOrder.tableId);
@@ -154,28 +184,20 @@ const Orders: React.FC = () => {
     }
   }, [currentOrder]);
 
-
-
+  // Handle location state for order sent panel
   useEffect(() => {
     if (location.state && location.state.showOrderSentPanel) {
       setShowOrderSentPanel(true);
-      // Optionally clear the state so it doesn't persist on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  const filteredItems =
-    selectedCategory === "all"
-      ? menuItems
-      : menuItems.filter((item) => item.itemType === selectedCategory);
-
-  // Dummy: Assume all items have size options
+  // Dummy size check
   const itemHasSize = () => true;
 
   // Handle right panel click (table-first flow)
   const handleRightPanelClick = () => {
-      setShowFloorPersonsPanel(true);
-    // Advance walkthrough if on the correct step
+    setShowFloorPersonsPanel(true);
     const walkthrough = useWalkthroughStore.getState();
     const step = walkthrough.steps[walkthrough.currentStep];
     if (step?.selector === ".select-table-prompt" && (!step.advanceOn || step.advanceOn === "both" || step.advanceOn === "ui")) {
@@ -184,9 +206,8 @@ const Orders: React.FC = () => {
   };
 
   // Handle item click (item-first flow)
-  const handleAddToCart = (item: (typeof menuItems)[0]) => {
+  const handleAddToCart = (item: any) => {
     if (!currentOrder && !selectedTable && !showFloorPersonsPanel) {
-      // Wait for panel to open, then open modal
       setTimeout(() => {
         setModalItem(item);
         if (itemHasSize()) {
@@ -207,15 +228,8 @@ const Orders: React.FC = () => {
   };
 
   // Handle AddonsModal save
-  const handleAddonsSave = ({
-    addons,
-    note,
-  }: {
-    addons: string[];
-    note: string;
-  }) => {
+  const handleAddonsSave = ({ addons, note }: { addons: string[]; note: string }) => {
     if (!modalItem) return;
-    // Find the add-on price from dummyAddons (or your real add-ons source)
     const dummyAddons = [
       { label: "No Ice", price: 0 },
       { label: "Less Sugar", price: 0 },
@@ -240,7 +254,6 @@ const Orders: React.FC = () => {
     if (!currentOrder && !selectedTable) {
       setPendingCustomizedItem(customizedItem);
       setShowAddonsModal(false);
-      // Show table selection UI in right panel
       setModalItem(null);
       setModalSize("M");
       return;
@@ -255,27 +268,20 @@ const Orders: React.FC = () => {
 
   // Order summary helpers
   const orderItems = currentOrder?.items || [];
-  const subtotal = orderItems.reduce((sum, item) => {
-    const addOnsTotal =
-      (item.addOns?.reduce((a, addon) => a + (addon.price || 0), 0) || 0) *
-      (item.quantity || 1);
+  const subtotal = orderItems.reduce((sum: number, item: any) => {
+    const addOnsTotal = (item.addOns?.reduce((a: number, addon: any) => a + (addon.price || 0), 0) || 0) * (item.quantity || 1);
     return sum + item.price * (item.quantity || 1) + addOnsTotal;
   }, 0);
   const tax = Math.round(subtotal * 0.06);
   const total = subtotal + tax;
-  const hasKitchenItem = orderItems.some(
-    (item) => item.preparationStation === "Kitchen"
-  );
-  const allCounter =
-    orderItems.length > 0 &&
-    orderItems.every((item) => item.preparationStation === "Counter");
+  const hasKitchenItem = orderItems.some((item: any) => item.preparationStation === "Kitchen");
+  const allCounter = orderItems.length > 0 && orderItems.every((item: any) => item.preparationStation === "Counter");
 
   // Handle order action
   const handleOrderAction = async () => {
     if (hasKitchenItem) {
       setShowConfirmationModal(true);
     } else if (allCounter) {
-      // Payment modal placeholder
       setTimeout(() => setShowOrderSentPanel(true), 800);
     }
   };
@@ -285,14 +291,13 @@ const Orders: React.FC = () => {
     if (!currentOrder) return;
     setOrderSending(true);
     try {
-      // Build order payload (add more fields as needed)
       const now = new Date().toISOString();
       const orderPayload = {
         orderId: Date.now().toString(),
         status: 'Pending' as OrderStatus,
         orderType: 'Dine-In' as OrderType,
         tableInfo: { tableId: currentOrder.tableId, floor: currentOrder.floor, status: 'Occupied' },
-        waiterName: 'John Doe', // Replace with actual user if available
+        waiterName: 'John Doe',
         pricingSummary: {
           subtotal,
           tax,
@@ -316,7 +321,7 @@ const Orders: React.FC = () => {
       setShowConfirmationModal(false);
       setShowOrderSentPanel(true);
     } catch {
-      console.warn('Failed to send order.');
+      console.error('Failed to send order');
     } finally {
       setOrderSending(false);
     }
@@ -329,16 +334,15 @@ const Orders: React.FC = () => {
     setSelectedTable(null);
     setPersons(1);
     setSelectedFloor("F-01");
+    setSelectedCategory("all");
+    setSelectedItemTypeId(null);
     const walkthrough = useWalkthroughStore.getState();
     walkthrough.complete();
-    // Do NOT start the next training here!
   };
 
   // Table selection UI logic
   const handleSelectTable = () => {
     navigate("/table", { state: { persons, floor: selectedFloor } });
-
-    // Advance walkthrough if on the correct step
     const walkthrough = useWalkthroughStore.getState();
     const step = walkthrough.steps[walkthrough.currentStep];
     if (step?.selector === ".select-table" && (!step.advanceOn || step.advanceOn === "both" || step.advanceOn === "ui")) {
@@ -346,7 +350,7 @@ const Orders: React.FC = () => {
     }
   };
 
-  // After table selection, reset showFloorPersonsPanel for next order
+  // Reset showFloorPersonsPanel after table selection
   useEffect(() => {
     if (selectedTable && showFloorPersonsPanel) {
       setShowFloorPersonsPanel(false);
@@ -361,7 +365,7 @@ const Orders: React.FC = () => {
   // Toggle allergy for an item
   const handleToggleAllergy = (itemId: string) => {
     if (!currentOrder) return;
-    const item = currentOrder.items.find((i) => i.itemId === itemId);
+    const item = currentOrder.items.find((i: any) => i.itemId === itemId);
     if (!item) return;
     updateOrderItem(itemId, { allergy: !item.allergy });
   };
@@ -370,6 +374,7 @@ const Orders: React.FC = () => {
   (window as any).handleSelectTable = handleSelectTable;
   (window as any).handleRightPanelClick = handleRightPanelClick;
 
+  // Walkthrough step check
   useEffect(() => {
     const walkthrough = useWalkthroughStore.getState();
     const step = walkthrough.steps[walkthrough.currentStep];
@@ -379,13 +384,12 @@ const Orders: React.FC = () => {
       filteredItems.length > 0 &&
       document.querySelector(".order-item-first")
     ) {
-      // No-op: the controller will now show the step because the element is present
-      // Optionally, you could force a re-render or call walkthrough.next() if needed
+      // No-op: controller will show the step
     }
   }, [filteredItems]);
 
+  // Order summary clickability
   useEffect(() => {
-    // Only disable click if walkthrough is active and on the order summary step
     const step = steps[currentStep];
     if (isActive && step && step.selector === '.order-summary-panel') {
       setOrderSummaryClickable(false);
@@ -394,54 +398,50 @@ const Orders: React.FC = () => {
     }
   }, [steps, currentStep, isActive]);
 
-
-
+  // Payment flow timeouts
   useEffect(() => {
     if (showReadyToScan) {
       const t = setTimeout(() => {
         setShowReadyToScan(false);
         setShowReadyToPay(true);
-        next(); // Advance walkthrough to .ready-to-pay-modal
+        next();
       }, 2000);
       return () => clearTimeout(t);
     }
-  }, [showReadyToScan]);
+  }, [showReadyToScan, next]);
 
   useEffect(() => {
     if (showReadyToPay) {
       const t = setTimeout(() => {
         setShowReadyToPay(false);
-        // setShowPaymentDone(true);
-        next(); // Advance walkthrough to .payment-done-modal
+        next();
       }, 2000);
       return () => clearTimeout(t);
     }
-  }, [showReadyToPay]);
+  }, [showReadyToPay, next]);
 
-  // PaymentDoneModal close handler
+  // Payment done modal close
   const handlePaymentDoneClose = () => {
-    // setShowPaymentDone(false);
-    setShowPaymentOptions(false); // Close payment options modal
-    setShowOrderSentPanel(true);  // Show next order UI in right panel
+    setShowPaymentOptions(false);
+    setShowOrderSentPanel(true);
     next();
     navigate('/orders');
   };
 
-  const step = steps[currentStep];
-
+  // Walkthrough completion
   const { completed, activeTraining, startTraining, reset } = useWalkthroughStore();
   useEffect(() => {
     if (completed && activeTraining === "order") {
-      reset(); // Fully clear the previous training state
+      reset();
       setTimeout(() => {
         startTraining("table", tableTrainingSteps);
-        navigate("/"); // Ensure we go to home, not /table
-      }, 50); // Small delay to ensure state is flushed
+        navigate("/");
+      }, 50);
     }
   }, [completed, activeTraining, startTraining, reset, navigate]);
 
   return (
-    <div className="flex flex-col   mb-20 py-4  sm:p-8  bg-[#fafafa] max-w-screen">
+    <div className="flex flex-col mb-20 py-4 sm:p-8 bg-[#fafafa] max-w-screen">
       <h1 className="text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-4">
         Quick Orders
       </h1>
@@ -451,81 +451,72 @@ const Orders: React.FC = () => {
           {/* Category Filter Bar */}
           <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-scroll bg-[#F1F1F1] rounded-full p-1">
             {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full font-medium transition-all ${
-                    selectedCategory === cat.value
-                      ? "bg-white shadow text-black"
-                      : "bg-transparent text-gray-500 hover:bg-gray-100"
+              <button
+                key={cat.value}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full font-medium transition-all ${
+                  selectedCategory === cat.value
+                    ? "bg-white shadow text-black"
+                    : "bg-transparent text-gray-500 hover:bg-gray-100"
+                } ${cat.value === "all" ? "all-items-tab" : ""}`}
+                onClick={() => {
+                  setSelectedCategory(cat.value);
+                  setSelectedItemTypeId(cat.value !== "all" ? cat.value : null);
+                  const walkthrough = useWalkthroughStore.getState();
+                  const step = walkthrough.steps[walkthrough.currentStep];
+                  if (!step?.advanceOn || step.advanceOn === 'both' || step.advanceOn === 'ui') {
+                    setTimeout(() => {
+                      walkthrough.next();
+                    }, 100);
                   }
-                  ${cat.value === "all" ? "all-items-tab" : ""}
-                  ${cat.value === "Burger" ? "burgers-tab" : ""}
-                  ${cat.value === "Beverage" ? "beverages-tab" : ""}
-                  ${cat.value === "Crispy" ? "crispy-tab" : ""}
-                  ${cat.value === "Nugget" ? "nuggets-tab" : ""}
-                  `}
-                  onClick={() => {
-                    setSelectedCategory(cat.value);
-                    const walkthrough = useWalkthroughStore.getState();
-                    const step = walkthrough.steps[walkthrough.currentStep];
-                    if (!step?.advanceOn || step.advanceOn === 'both' || step.advanceOn === 'ui') {
-                      setTimeout(() => {
-                        walkthrough.next();
-                      }, 100);
-                    }
-                  }}
-                >
-                  {cat.icon && <span className="text-xl">{cat.icon}</span>}
-                  {cat.label}
-                </button>
+                }}
+              >
+                {cat.icon && <span className="text-xl">{cat.icon}</span>}
+                {cat.label}
+              </button>
             ))}
           </div>
           {/* Items Grid */}
-          {loading ? (
-            <div className="text-center py-12 text-gray-400">Loading...</div>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="w-12 h-12 border-4 border-t-4 border-gray-200 border-t-[#6A1B9A] rounded-full animate-spin"></div>
+            </div>
+          ) : hasError || filteredItems.length === 0 ? (
+            <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 text-center text-gray-400">
+              No items found.
+            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 ">
-              {filteredItems.length === 0 ? (
-                <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 text-center text-gray-400">
-                  No items found.
-                </div>
-              ) : (
-                filteredItems.map((item, idx) => (
-                  <div
-                    key={item.itemId + idx}
-                    className={`w-[125px] min-h-[140px] bg-white rounded-xl shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between p-2 cursor-pointer border border-gray-100 group min-w-[125px] mx-auto${idx === 0 ? ' order-item-first' : ''}${idx === 1 ? ' order-item-second' : ''}${idx === 2 ? ' order-item-third' : ''}`}
-                    onClick={() => {
-                      // If walkthrough is active and on the correct step, bypass modals
-                      const walkthrough = useWalkthroughStore.getState();
-                      const step = walkthrough.steps[walkthrough.currentStep];
-                      if (
-                        walkthrough.isActive &&
-                        (step?.selector === ".order-item-first" || step?.selector === ".order-item-second" || step?.selector === ".order-item-third")
-                      ) {
-                        addItemToOrder({ ...item, quantity: 1 });
-                        walkthrough.next();
-                        return;
-                      }
-                      handleAddToCart(item);
-                    }}
-                  >
-                    <img
-                      src={
-                        item.image ||
-                        "https://via.placeholder.com/81x67?text=Item"
-                      }
-                      alt={item.name}
-                      className="w-[81px] h-[67px] object-contain mt-2"
-                    />
-                    <div className="text-[14px] font-medium text-center mt-2 line-clamp-2">
-                      {item.name}
-                    </div>
-                    <div className="text-[12px] font-semibold text-black mt-1">
-                      {item.price} XOF
-                    </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
+              {filteredItems.map((item: any, idx: number) => (
+                <div
+                  key={item.itemId + idx}
+                  className={`w-[125px] min-h-[140px] bg-white rounded-xl shadow-[0_0_10px_2px_rgba(0,0,0,0.1)] flex flex-col items-center justify-between p-2 cursor-pointer border border-gray-100 group min-w-[125px] mx-auto${idx === 0 ? ' order-item-first' : ''}${idx === 1 ? ' order-item-second' : ''}${idx === 2 ? ' order-item-third' : ''}`}
+                  onClick={() => {
+                    const walkthrough = useWalkthroughStore.getState();
+                    const step = walkthrough.steps[walkthrough.currentStep];
+                    if (
+                      walkthrough.isActive &&
+                      (step?.selector === ".order-item-first" || step?.selector === ".order-item-second" || step?.selector === ".order-item-third")
+                    ) {
+                      addItemToOrder({ ...item, quantity: 1 });
+                      walkthrough.next();
+                      return;
+                    }
+                    handleAddToCart(item);
+                  }}
+                >
+                  <img
+                    src={item.image || "https://via.placeholder.com/81x67?text=Item"}
+                    alt={item.name}
+                    className="w-[81px] h-[67px] object-contain mt-2"
+                  />
+                  <div className="text-[14px] font-medium text-center mt-2 line-clamp-2">
+                    {item.name}
                   </div>
-                ))
-              )}
+                  <div className="text-[12px] font-semibold text-black mt-1">
+                    {item.price} XOF
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {feedback && (
@@ -535,20 +526,15 @@ const Orders: React.FC = () => {
           )}
           {showOrderSentPanel && (
             <div
-              className="absolute inset-0 z-30 flex items-center justify-center   bg-[rgba(0,0,0,0)] 
-              bg-opacity-30"
-              // backdrop-blur-xs
+              className="absolute inset-0 z-30 flex items-center justify-center bg-[rgba(0,0,0,0)] bg-opacity-30"
               style={{ pointerEvents: 'auto' }}
             >
-              {/* <div className="bg-white rounded-xl shadow-lg px-8 py-6 text-lg font-semibold text-center">
-                Click on <span className="text-primary font-bold">Next Order</span> to continue
-              </div> */}
             </div>
           )}
         </div>
         {/* Right: Table/Order Panel */}
         <div
-          className="w-full  lg:w-96 bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center text-center  min-h-[300px] sm:min-h-[400px] overflow-y-auto mt-4 lg:mt-0"
+          className="w-full lg:w-96 bg-white rounded-3xl shadow-lg flex flex-col items-center justify-center text-center min-h-[300px] sm:min-h-[400px] overflow-y-auto mt-4 lg:mt-0"
           onClick={handleRightPanelClick}
           style={{
             cursor:
@@ -563,15 +549,14 @@ const Orders: React.FC = () => {
         >
           {/* Order Sent Panel */}
           {showOrderSentPanel && (
-              <div className="w-full h-full flex flex-col justify-between overflow-scroll order-sent-panel">
+            <div className="w-full h-full flex flex-col justify-between overflow-scroll order-sent-panel">
               <div className="bg-[#EDEDED] rounded-t-2xl p-4 w-full text-left">
-                <div className="text-lg font-bold">#{currentOrder ? (currentOrder as any).orderId ||( Math.random()*1000).toFixed(0) : (Math.random()*1000).toFixed(0)}</div>
+                <div className="text-lg font-bold">#{currentOrder ? (currentOrder as any).orderId || (Math.random()*1000).toFixed(0) : (Math.random()*1000).toFixed(0)}</div>
                 <div className="flex justify-between">
-
-                <div className="text-xs font-semibold">Order Created</div>
-                <div className="text-xs font-semibold text-right">
-                  Table - {currentOrder?.tableId.replace("t-", "")}
-                </div>
+                  <div className="text-xs font-semibold">Order Created</div>
+                  <div className="text-xs font-semibold text-right">
+                    Table - {currentOrder?.tableId.replace("t-", "")}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-col items-center justify-center py-8">
@@ -594,9 +579,8 @@ const Orders: React.FC = () => {
             subtitle="Your Dish has been created and will be updated in the menu in couple of minutes"
             buttonText={orderSending ? "Sending..." : "Continue"}
             onButtonClick={handleConfirmationContinue}
-            
           />
-          {/* Floor/persons selection UI (if no table selected and showFloorPersonsPanel) */}
+          {/* Floor/persons selection UI */}
           {!selectedTable &&
             !currentOrder &&
             showFloorPersonsPanel &&
@@ -648,16 +632,17 @@ const Orders: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="mb-6 p-6 ">
+                  <div className="mb-6 p-6">
                     <div className="font-semibold mb-6 text-start">Select Floor:</div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                       {floors.map((floor) => (
                         <button
                           key={floor}
-                          className={`py-2 sm:py-3 rounded-lg text-base font-medium shadow-sm transition-all  ${
+                          className={`py-2 sm:py-3 rounded-lg text-base font-medium shadow-sm transition-all ${
                             selectedFloor === floor
                               ? "bg-gradient-to-b from-[#6A1B9A] to-[#D32F2F] text-white"
-                              : "bg-[#f7f2fa]"}`}
+                              : "bg-[#f7f2fa]"
+                          }`}
                           onClick={() => {
                             setSelectedFloor(floor);
                             setFloor(floor);
@@ -671,13 +656,11 @@ const Orders: React.FC = () => {
                   <button
                     className="select-table-panel w-full py-3 mt-2 rounded-b-lg text-lg font-semibold text-white bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] shadow-md hover:opacity-90 transition-all"
                     onClick={() => {
-                      // Advance walkthrough to the next step before navigating
                       const walkthrough = useWalkthroughStore.getState();
                       const step = walkthrough.steps[walkthrough.currentStep];
                       if (step?.selector === ".person-floor-panel" && (!step.advanceOn || step.advanceOn === "both" || step.advanceOn === "ui")) {
                         walkthrough.next();
                       }
-                      // Now navigate to /table
                       handleSelectTable();
                     }}
                   >
@@ -686,7 +669,7 @@ const Orders: React.FC = () => {
                 </div>
               </div>
             )}
-          {/* Initial State: Prompt to select table (only if not showing selection UI) */}
+          {/* Initial State: Prompt to select table */}
           {!selectedTable &&
             !currentOrder &&
             !showOrderSentPanel &&
@@ -703,14 +686,12 @@ const Orders: React.FC = () => {
                 </div>
               </div>
             )}
-          {/* Table selected, but order not started (table-first flow) */}
+          {/* Table selected, but order not started */}
           {selectedTable &&
             !currentOrder &&
             !pendingCustomizedItem &&
             !showOrderSentPanel &&
-            !showConfirmationModal &&
-            (console.log("[Render] Start Order panel"),
-            (
+            !showConfirmationModal && (
               <div className="w-full h-full flex flex-col justify-between overflow-scroll">
                 <div
                   className="rounded-t-2xl p-4 text-black text-left"
@@ -727,20 +708,15 @@ const Orders: React.FC = () => {
                 <div className="flex flex-col items-center justify-between gap-4 py-8 px-4">
                   <div className="flex w-1/2 gap-2 text-lg">
                     <img src={personIcon} alt="person icon" />
-                    Persons:{" "}
-                    <span className="font-bold">
-                      {persons.toString().padStart(2, "0")}
-                    </span>
+                    Persons: <span className="font-bold">{persons.toString().padStart(2, "0")}</span>
                   </div>
                   <div className="flex w-1/2 gap-2 text-lg">
                     <img src={floorIcon} alt="floor icon" />
-                    Floor:{" "}
-                    <span className="font-bold">{(selectedFloor ?? "F-01").replace("F-", "")}</span>
+                    Floor: <span className="font-bold">{(selectedFloor ?? "F-01").replace("F-", "")}</span>
                   </div>
                   <div className="flex w-1/2 gap-2 text-lg">
                     <img src={tableIcon} alt="table icon" />
-                    Table:{" "}
-                    <span className="font-bold">{(selectedTable ?? "").replace("t-", "")}</span>
+                    Table: <span className="font-bold">{(selectedTable ?? "").replace("t-", "")}</span>
                   </div>
                 </div>
                 <button
@@ -761,48 +737,46 @@ const Orders: React.FC = () => {
                   Start Order
                 </button>
               </div>
-            ))}
-          {/* Order Summary Panel (shown after order is started and has items, or if showSummaryPanel is true) */}
+            )}
+          {/* Order Summary Panel */}
           {(currentOrder && ((currentOrder.items && currentOrder.items.length > 0) || showSummaryPanel) && !showOrderSentPanel && !showConfirmationModal) && (
             <div className="order-summary-panel w-full h-full flex flex-col justify-between overflow-scroll" style={{ pointerEvents: orderSummaryClickable ? 'auto' : 'none', opacity: orderSummaryClickable ? 1 : 0.6 }}>
               <div
-                className="rounded-t-2xl py-4 px-7  text-black text-left"
+                className="rounded-t-2xl py-4 px-7 text-black text-left"
                 style={{
                   background:
                     "linear-gradient(180deg, rgba(106, 27, 154, 0.5) 0%, rgba(211, 47, 47, 0.5) 100%)",
                 }}
               >
                 <div className="text-2xl font-bold">Order Summary</div>
-                <div className="text-base font-medium ">
+                <div className="text-base font-medium">
                   Table - {currentOrder.tableId.replace("t-", "")}
                 </div>
               </div>
               <div className="flex flex-col gap-2 py-4 px-4 flex-1 overflow-y-auto">
-                <div className="flex font-medium text-base  border-b border-black pb-2">
+                <div className="flex font-medium text-base border-b border-black pb-2">
                   <div className="w-12">Qty</div>
                   <div className="flex-1">Item</div>
                   <div className="w-20">Size</div>
                   <div className="w-20 text-right">Total</div>
                 </div>
-                {orderItems.map((item, idx) => (
+                {orderItems.map((item: any, idx: number) => (
                   <div
                     key={item.itemId + idx}
-                    className="flex justify-between text-base border-b border-gray-100  group"
+                    className="flex justify-between text-base border-b border-gray-100 group"
                   >
-                    <div className="w-12  ">
+                    <div className="w-12">
                       {item.quantity || 1} x{item.size || "L"}
                     </div>
                     <div className="flex-1 flex flex-col items-start">
                       <span className="font-semibold text-sm">{item.name}</span>
-
                       {item.addOns && item.addOns.length > 0 && (
                         <>
                           <div className="text-[10px] text-[#00000099] text-wrap text-start">
-                            {item.addOns.map((a) => a.name).join(", ")}
+                            {item.addOns.map((a: any) => a.name).join(", ")}
                           </div>
-                          {/* Show add-on total price if any */}
                           {(() => {
-                            const addOnTotal = item.addOns.reduce((sum, a) => sum + (a.price || 0), 0) * (item.quantity || 1);
+                            const addOnTotal = item.addOns.reduce((sum: number, a: any) => sum + (a.price || 0), 0) * (item.quantity || 1);
                             return addOnTotal > 0 ? (
                               <div className="text-[10px] text-[#D32F2F] font-semibold mt-0.5">+{addOnTotal} XOF</div>
                             ) : null;
@@ -815,8 +789,8 @@ const Orders: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="w-20 text-right font-bold ">
-                    <button
+                    <div className="w-20 text-right font-bold">
+                      <button
                         className={`px-3 py-1 rounded-md text-xs font-bold transition-all mb-1 ${
                           item.allergy
                             ? "bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] text-white shadow"
@@ -829,7 +803,7 @@ const Orders: React.FC = () => {
                     </div>
                     <div className="flex flex-col justify-between items-end h-full ml-auto" style={{ minHeight: 60 }}>
                       <div className="w-20 text-right text-[10px] font-semibold mb-auto">
-                      {item.price} XOF
+                        {item.price} XOF
                       </div>
                       <button
                         className="w-8 h-8 flex items-baseline justify-end mt-auto opacity-80 hover:opacity-100"
@@ -842,9 +816,9 @@ const Orders: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-dashed border-gray-300 "></div>
+              <div className="border-t border-dashed border-gray-300"></div>
               <div
-                className=" p-4"
+                className="p-4"
                 style={{
                   background:
                     "linear-gradient(180deg, rgba(106, 27, 154, 0.1) 0%, rgba(211, 47, 47, 0.1) 100%)",
@@ -856,19 +830,17 @@ const Orders: React.FC = () => {
                 </div>
                 <div className="flex justify-between font-bold text-xl text-[#303030]">
                   <span>
-                    Subtotal{" "}
-                    <span className="font-normal text-sm">(Incl. tax)</span>
+                    Subtotal <span className="font-normal text-sm">(Incl. tax)</span>
                   </span>
                   <span className="text-[#303030] font-medium">
                     {total.toLocaleString()} XOF
                   </span>
                 </div>
               </div>
-
               {orderItems.length > 0 &&
-                orderItems.some((item) => item.itemType !== "Beverage") && (
+                orderItems.some((item: any) => item.itemType !== "Beverage") && (
                   <button
-                    className="w-full py-2 text-lg font-semibold bg-green-500 text-white  shadow hover:opacity-90 transition-all"
+                    className="w-full py-2 text-lg font-semibold bg-green-500 text-white shadow hover:opacity-90 transition-all"
                     onClick={handleOrderAction}
                   >
                     Send to Kitchen
@@ -876,10 +848,9 @@ const Orders: React.FC = () => {
                 )}
               {orderItems.length > 0 && (
                 <button
-                  className="select-payment-btn w-full py-3 text-lg font-bold bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] text-white rounded-b-2xl rounded-t-none shadow hover:opacity-90 transition-all "
+                  className="select-payment-btn w-full py-3 text-lg font-bold bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] text-white rounded-b-2xl rounded-t-none shadow hover:opacity-90 transition-all"
                   onClick={() => {
                     setShowOrderSummaryModal(true);
-                    // Advance walkthrough if on the correct step
                     const walkthrough = useWalkthroughStore.getState();
                     const step = walkthrough.steps[walkthrough.currentStep];
                     if (step?.selector === ".select-payment-btn" && (!step.advanceOn || step.advanceOn === "both" || step.advanceOn === "ui")) {
@@ -894,7 +865,7 @@ const Orders: React.FC = () => {
               )}
             </div>
           )}
-          {/* Start Order Panel (shown after table selection, before adding items) */}
+          {/* Start Order Panel */}
           {currentOrder && currentOrder.items && currentOrder.items.length === 0 && !showOrderSentPanel && !showConfirmationModal && !showSummaryPanel && (
             <div className="w-full h-full flex flex-col justify-between overflow-scroll">
               <div
@@ -935,7 +906,7 @@ const Orders: React.FC = () => {
           )}
         </div>
       </div>
-      {/* Item Details Modal */}
+      {/* Modals */}
       <ItemDetailsModal
         open={showItemDetailsModal}
         item={modalItem}
@@ -946,7 +917,6 @@ const Orders: React.FC = () => {
           setTimeout(() => setShowAddonsModal(true), 100);
         }}
       />
-      {/* Addons Modal */}
       <AddonsModal
         open={showAddonsModal}
         item={modalItem}
@@ -975,14 +945,12 @@ const Orders: React.FC = () => {
           setTimeout(() => setShowPaymentOptions(true), 200);
         }}
       />
-      {/* Payment Flow Modals */}
-      {showPaymentOptions && (
       <PaymentModal
-          open={showPaymentOptions}
-          onClose={() => setShowPaymentOptions(false)}
+        open={showPaymentOptions}
+        onClose={() => setShowPaymentOptions(false)}
         total={total}
         onConfirm={async (method) => {
-            if(isActive) return
+          if (isActive) return;
           const orderId = (currentOrder && (currentOrder as any).orderId) || `${currentOrder?.tableId}-${currentOrder?.floor}-${currentOrder?.persons}`;
           if (currentOrder && orderId) {
             await updateOrder(orderId, {
@@ -991,11 +959,8 @@ const Orders: React.FC = () => {
                 status: 'Paid',
               },
             });
-            // Send order to kitchen
-            const subtotal = currentOrder.items.reduce((sum, item) => {
-              const addOnsTotal =
-                (item.addOns?.reduce((a, addon) => a + (addon.price || 0), 0) || 0) *
-                (item.quantity || 1);
+            const subtotal = currentOrder.items.reduce((sum: number, item: any) => {
+              const addOnsTotal = (item.addOns?.reduce((a: number, addon: any) => a + (addon.price || 0), 0) || 0) * (item.quantity || 1);
               return sum + item.price * (item.quantity || 1) + addOnsTotal;
             }, 0);
             const tax = Math.round(subtotal * 0.06);
@@ -1028,15 +993,13 @@ const Orders: React.FC = () => {
           }
         }}
       />
-      )}
-
-      {isActive && step?.selector === '.ready-to-scan-modal' && (
+      {isActive && steps[currentStep]?.selector === '.ready-to-scan-modal' && (
         <ReadyToScanModal onClose={() => setTimeout(next, 2000)} />
       )}
-      {isActive && step?.selector === '.ready-to-pay-modal' && (
+      {isActive && steps[currentStep]?.selector === '.ready-to-pay-modal' && (
         <ReadyToPayModal onClose={() => setTimeout(next, 2000)} />
       )}
-      {isActive && step?.selector === '.payment-done-modal' && (
+      {isActive && steps[currentStep]?.selector === '.payment-done-modal' && (
         <PaymentDoneModal onClose={handlePaymentDoneClose} />
       )}
       <SuccessModal
