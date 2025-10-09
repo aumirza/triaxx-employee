@@ -17,7 +17,7 @@ export const orderHistoryApi = createApi({
       query: ({ page = 1, limit = 10, search = '', order_status = '', client_mobile_no = '', table_id = '', floor_id = '' }) =>
         `/api/employee/order_history/getall?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&order_status=${encodeURIComponent(order_status)}&client_mobile_no=${encodeURIComponent(client_mobile_no)}&table_id=${encodeURIComponent(table_id)}&floor_id=${encodeURIComponent(floor_id)}`,
       transformResponse: (response: any) => response,
-      providesTags: (result, error, arg) =>
+      providesTags: (result) =>
         result
           ? [
               ...result.data.orders.map((order: any) => ({ type: 'OrderHistory' as const, id: order.order.order_id })),
