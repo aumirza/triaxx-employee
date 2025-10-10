@@ -25,7 +25,31 @@ export const orderHistoryApi = createApi({
             ]
           : [{ type: 'OrderHistory' as const, id: 'LIST' }],
     }),
+    getOrderHistoryByDateRange: builder.query<any, any>({
+      query: ({ start_date, end_date, page = 1, limit = 10 }) =>
+        `/api/employee/order_history/getbydaterange?start_date=${start_date}&end_date=${end_date}&page=${page}&limit=${limit}`,
+      transformResponse: (response: any) => response,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.orders.map((order: any) => ({ type: 'OrderHistory' as const, id: order.order.order_id })),
+              { type: 'OrderHistory' as const, id: 'LIST' },
+            ]
+          : [{ type: 'OrderHistory' as const, id: 'LIST' }],
+    }),
+    getOrderHistoryByStatus: builder.query<any, any>({
+      query: ({ status, page = 1, limit = 10 }) =>
+        `/api/employee/order_history/getbystatus/${encodeURIComponent(status)}?page=${page}&limit=${limit}`,
+      transformResponse: (response: any) => response,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.orders.map((order: any) => ({ type: 'OrderHistory' as const, id: order.order.order_id })),
+              { type: 'OrderHistory' as const, id: 'LIST' },
+            ]
+          : [{ type: 'OrderHistory' as const, id: 'LIST' }],
+    }),
   }),
 });
 
-export const { useGetAllOrderHistoryQuery } = orderHistoryApi;
+export const { useGetAllOrderHistoryQuery, useGetOrderHistoryByDateRangeQuery, useGetOrderHistoryByStatusQuery } = orderHistoryApi;

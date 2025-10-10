@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useGetAllOrderHistoryQuery } from '@/redux/api/orderHistoryApi';
+import { useGetAllOrderHistoryQuery, useGetOrderHistoryByDateRangeQuery, useGetOrderHistoryByStatusQuery } from '@/redux/api/orderHistoryApi';
 import OrderSummaryModal from '@/components/common/OrderSummaryModal';
 import PaymentModal from '@/components/common/PaymentModal';
 import { SuccessModal } from '@/components/common/SuccessModal';
 import Invoice from './Invoice';
-import type {  OrderItem } from '@/types/order';
+import type { OrderItem } from '@/types/order';
 import cutleryIcon from '@/assets/order/cutlery.svg';
 import preparingIcon from '@/assets/order/preparing.svg'; 
 import checkIcon from '@/assets/payment/success_tick_receipt.svg'; // for served
@@ -27,7 +27,7 @@ const getStatusBadge = (order: any) => {
     : undefined;
   const minutes = getMinutesAgo(lastStatus?.at);
 
-  if (order.status === 'Preparing' || order.status === 'Pending') {
+  if (order.status === 'Preparing') {
     return (
       <span className="bg-[#FFE3BC] text-[#FF9500] px-3 py-2 min-h-[50px] rounded-2xl text-xs font-semibold flex flex-col items-center gap-1">
         <span>{order?.status}
@@ -37,7 +37,7 @@ const getStatusBadge = (order: any) => {
       </span>
     );
   }
-  if (order.status === 'Ready' || order.status === 'Completed') {
+  if (order.status === 'Served') {
     return (
       <span className="bg-[#34C7594D] text-green-700 px-3 py-2 rounded-2xl min-h-[50px] text-xs font-semibold flex items-center gap-1">
         {order.status}
@@ -60,6 +60,25 @@ const getStatusBadge = (order: any) => {
   );
 };
 
+const getDateRange = (filter: string) => {
+  const today = new Date();
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+  if (filter === 'Today') {
+    const td = formatDate(today);
+    return { start_date: td, end_date: td };
+  } else if (filter === 'Last Week') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 7);
+    return { start_date: formatDate(start), end_date: formatDate(today) };
+  } else if (filter === 'Last Month') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 30);
+    return { start_date: formatDate(start), end_date: formatDate(today) };
+  }
+  return null;
+};
+
 const OrderHistory = () => {
   const [activeTab, setActiveTab] = useState('orders');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
@@ -67,28 +86,72 @@ const OrderHistory = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Filter and tab logic (simplified for now)
+  // Filter and tab logic
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [dateFilter, setDateFilter] = useState('Today');
-  const [tableFilter, setTableFilter] = useState('All Tables');
   const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
   const { steps, currentStep, isActive, next, completed, activeTraining, completedTrainings, startTraining } = useWalkthroughStore();
 
+  const dateRange = getDateRange(dateFilter);
+  const page = 1;
+  const limit = 100; // Fetch more to allow client-side filtering
+
+  const skipDate = !dateRange;
+  const skipStatus = statusFilter === '' || !!dateRange;
+  const skipAll = !!dateRange || statusFilter !== '';
+
   const {
-    data: orderHistory = { data: { orders: [], pagination: { current_page: 1, total_pages: 1, total_orders: 0, orders_per_page: 10 } } },
-    isLoading,
-    isError,
-    refetch,
-  } = useGetAllOrderHistoryQuery({ page: 1, limit: 10 });
+    data: rangeData,
+    isLoading: rangeLoading,
+    isError: rangeError,
+    refetch: rangeRefetch,
+  } = useGetOrderHistoryByDateRangeQuery(
+    { start_date: dateRange?.start_date, end_date: dateRange?.end_date, page, limit },
+    { skip: skipDate }
+  );
 
-  // Fetch orders on component mount
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
+  const {
+    data: statusData,
+    isLoading: statusLoading,
+    isError: statusError,
+    refetch: statusRefetch,
+  } = useGetOrderHistoryByStatusQuery(
+    { status: statusFilter, page, limit },
+    { skip: skipStatus }
+  );
 
-  // Fetch orders when filters change (currently no-op since filters are not implemented in API)
- 
+  const {
+    data: allData,
+    isLoading: allLoading,
+    isError: allError,
+    refetch: allRefetch,
+  } = useGetAllOrderHistoryQuery(
+    { page, limit, search: '', order_status: '', client_mobile_no: '', table_id: '', floor_id: '' },
+    { skip: skipAll }
+  );
+
+  let data;
+  let isLoading;
+  let isError;
+  let activeRefetch;
+  isLoading=allLoading || rangeLoading || statusLoading;
+  if (!skipDate) {
+    data = rangeData;
+    isLoading = rangeLoading;
+    isError = rangeError;
+    activeRefetch = rangeRefetch;
+  } else if (!skipStatus) {
+    data = statusData;
+    isLoading = statusLoading;
+    isError = statusError;
+    activeRefetch = statusRefetch;
+  } else {
+    data = allData;
+    isLoading = allLoading;
+    isError = allError;
+    activeRefetch = allRefetch;
+  }
 
   // Chain to teamchat training after orderHistory training completes
   useEffect(() => {
@@ -106,7 +169,13 @@ const OrderHistory = () => {
     return <Invoice onBack={() => setActiveTab('orders')} />;
   }
 
-  const orders = orderHistory?.data?.orders || [];
+  let orders = data?.data?.orders || [];
+  let timePeriod = dateFilter ? dateFilter.toLowerCase() : 'all time';
+
+  if (!skipDate && statusFilter) {
+    // Client-side filter for status when using date range
+    orders = orders.filter((o: any) => o.order.order_status === statusFilter);
+  }
 
   return (
     <div className="p-8 min-h-screen">
@@ -133,7 +202,7 @@ const OrderHistory = () => {
                     }
                   }}
                 >
-                  {dateFilter}
+                  {dateFilter || 'All Time'}
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -141,14 +210,17 @@ const OrderHistory = () => {
               </div>
               {showDateDropdown && (
                 <div className="order-history-date-dropdown absolute -left-4 -mt-14 w-44 bg-white rounded-lg shadow-lg z-10 p-2">
-                  {['Today', 'Yesterday', 'This week', 'This Month'].map(option => (
+                  {['Today', 'Last Week', 'Last Month', 'Reset'].map(option => (
                     <button
                       key={option}
                       className="block w-full text-left px-4 py-1 hover:bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F]"
                       onClick={() => {
-                        setDateFilter(option);
+                        if (option === 'Reset') {
+                          setDateFilter('');
+                        } else {
+                          setDateFilter(option);
+                        }
                         setShowDateDropdown(false);
-                        // refetch({ page: 1, limit: 10 });
                       }}
                     >
                       {option}
@@ -157,30 +229,22 @@ const OrderHistory = () => {
                 </div>
               )}
             </div>
-            {/* Table/Status Filters */}
+            {/* Status Filters */}
             <div className="flex items-center gap-1 bg-[#F1F1F1] rounded-full px-2 py-1">
-              {['All Tables', 'Served', 'waiting', 'Reserved'].map(option => (
+              {['All', 'Preparing', 'Served', 'Cancelled'].map(option => (
                 <button
                   key={option}
                   className={`px-5 py-2 rounded-full font-medium ${
-                    (option === 'All Tables' && tableFilter === option && statusFilter === '') ||
-                    (option !== 'All Tables' && statusFilter === option)
+                    (option === 'All' && statusFilter === '') ||
+                    (option !== 'All' && statusFilter === option)
                       ? 'bg-white text-black shadow'
                       : 'bg-transparent text-black'
-                  }
-                  ${option === 'All Tables' ? 'order-history-tab-all' : ''}
-                  ${option === 'Served' ? 'order-history-tab-served' : ''}
-                  ${option === 'waiting' ? 'order-history-tab-waiting' : ''}
-                  ${option === 'Reserved' ? 'order-history-tab-reserved' : ''}`}
+                  }`}
                   onClick={() => {
-                    if (option === 'All Tables') {
-                      setTableFilter(option);
+                    if (option === 'All') {
                       setStatusFilter('');
-                      // refetch({ page: 1, limit: 10 });
                     } else {
                       setStatusFilter(option);
-                      setTableFilter('All Tables');
-                      // refetch({ page: 1, limit: 10 });
                     }
                   }}
                 >
@@ -197,16 +261,10 @@ const OrderHistory = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-400 mb-2">
-              {statusFilter === "Served" && `No served orders for ${dateFilter.toLowerCase()}`}
-              {statusFilter === "waiting" && `No waiting orders for ${dateFilter.toLowerCase()}`}
-              {statusFilter === "Reserved" && `No reserved orders for ${dateFilter.toLowerCase()}`}
-              {statusFilter === "" && `No orders found for ${dateFilter.toLowerCase()}`}
+              {statusFilter ? `No ${statusFilter.toLowerCase()} orders for ${timePeriod}` : `No orders found for ${timePeriod}`}
             </div>
             <div className="text-sm text-gray-500">
-              {statusFilter === "Served" && "No orders have been served in this time period"}
-              {statusFilter === "waiting" && "No orders are currently waiting in this time period"}
-              {statusFilter === "Reserved" && "No orders are currently reserved in this time period"}
-              {statusFilter === "" && "Try adjusting your date range or status filter"}
+              {statusFilter ? `No orders are in ${statusFilter.toLowerCase()} status in this time period` : "Try adjusting your date range or status filter"}
             </div>
           </div>
         </div>
@@ -380,7 +438,7 @@ const OrderHistory = () => {
         onButtonClick={() => {
           setShowSuccessModal(false);
           setShowSummaryModal(false);
-          refetch();
+          activeRefetch();
         }}
       />
     </div>
