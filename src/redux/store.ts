@@ -7,6 +7,7 @@ import { apiSlice } from './api/apiSlice';
 import authReducer from './slice/authSlice';
 import { orderHistoryApi } from './api/orderHistoryApi';
 import { quickOrderApi } from './api/quickOrderSlice';
+import { userApi } from './api/userApi';
 
 const persistConfig = {
   key: 'root',
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
   [orderHistoryApi.reducerPath]: orderHistoryApi.reducer,
   [quickOrderApi.reducerPath]: quickOrderApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
   auth: authReducer,
 });
 
@@ -30,7 +32,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(apiSlice.middleware, orderHistoryApi.middleware, quickOrderApi.middleware),
+    }).concat(apiSlice.middleware, orderHistoryApi.middleware, quickOrderApi.middleware, userApi.middleware),
 });
 
 setupListeners(store.dispatch);

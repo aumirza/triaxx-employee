@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ProfileDesktop from './ProfileDesktop';
 import { ProfileMobile } from './ProfileMobile';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useWalkthroughStore } from '@/store/walkthroughStore';
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { useGetUserByAuthQuery } from '@/redux/api/userApi';
+import Loader from '@/components/Loader';
 
 const Profile: React.FC = () => {
   const isMobile = useMediaQuery('(max-width: 1023px)');
   const { settingsHighlight, setSettingsHighlight } = useWalkthroughStore();
   const navigate = useNavigate();
+  
+  const { data: userResponse, isLoading, isError } = useGetUserByAuthQuery();
 
   useEffect(() => {
     if (settingsHighlight === 'profile') {
@@ -20,12 +22,21 @@ const Profile: React.FC = () => {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  
   }, [settingsHighlight, setSettingsHighlight, navigate]);
 
-  // Force tab selection when highlighting
   const forceSecurityTab = settingsHighlight === 'security';
   const forceWorkTab = settingsHighlight === 'work';
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (isError) {
+    return  'Failed to load user profile'
+  }
+
+  const user = userResponse?.data;
+
   return (
     <div 
       className={
@@ -38,7 +49,19 @@ const Profile: React.FC = () => {
           : ''
       }
     >
-      {isMobile ? <ProfileMobile forceSecurityTab={forceSecurityTab} forceWorkTab={forceWorkTab} /> : <ProfileDesktop forceSecurityTab={forceSecurityTab} forceWorkTab={forceWorkTab} />}
+      {isMobile ? (
+        <ProfileMobile 
+          forceSecurityTab={forceSecurityTab} 
+          forceWorkTab={forceWorkTab}
+          user={user}
+        />
+      ) : (
+        <ProfileDesktop 
+          forceSecurityTab={forceSecurityTab} 
+          forceWorkTab={forceWorkTab}
+          user={user}
+        />
+      )}
     </div>
   );
 };

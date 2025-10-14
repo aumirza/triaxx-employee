@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { useStore } from "@/store/zustandStores";
 import userIcon from "@/assets/profile/user.svg";
 import accountIcon from "@/assets/profile/account_icon.svg";
 import emailIcon from "@/assets/profile/email_icon.svg";
@@ -11,7 +10,6 @@ import workSummaryIcon from "@/assets/profile/work_summary.svg";
 import changePasswordIcon from "@/assets/profile/change_password.svg";
 import notificationIcon from "@/assets/profile/notification_light.svg";
 import notificationIconFilled from "@/assets/profile/notification.svg";
-
 import logoutIcon from "@/assets/profile/logout.svg";
 import clockIcon from "@/assets/profile/clock_icon.svg";
 import backIcon from "@/assets/back.svg";
@@ -26,46 +24,66 @@ import eyeIcon from '@/assets/eye_icon.svg';
 import { useNavigate } from "react-router-dom";
 import { useWalkthroughStore } from "@/store/walkthroughStore";
 
-const PersonalMobile = ({ onBack }: { onBack: () => void }) => {
-  const user = useStore((state) => state.user);
-  const navigate = useNavigate()
+interface User {
+  _id: string;
+  Name: string;
+  Responsibility_id: {
+    Responsibility_id: number;
+    Responsibility_name: string;
+  };
+  Role_id: {
+    Role_id: number;
+    role_name: string;
+  };
+  Employee_id: string;
+  email: string;
+  phone: string;
+  user_image: string;
+  OnboardingDate: string;
+  yearsWithus: number;
+}
+
+interface ProfileMobileProps {
+  forceSecurityTab?: boolean;
+  forceWorkTab?: boolean;
+  user?: User;
+}
+
+const PersonalMobile = ({ onBack, user }: { onBack: () => void; user?: User }) => {
+  const navigate = useNavigate();
   return (
     <div className="w-full min-h-screen bg-[#F9F6FB] pb-8"> 
-      {/* Header */}
       <div className="relative w-full h-20" style={{background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)"}}>
         <div className="flex items-center justify-between px-4 pt-6">
-          <div className=" flex gap-4">
-            
-          <button className="text-white text-2xl" onClick={onBack}>
-            <img src={backIcon} alt="back"  />
-          </button>
-          <span className="text-white text-2xl font-bold text-left">Profile Info</span>
+          <div className="flex gap-4">
+            <button className="text-white text-2xl" onClick={onBack}>
+              <img src={backIcon} alt="back" />
+            </button>
+            <span className="text-white text-2xl font-bold text-left">Profile Info</span>
           </div>
-          <img src={notificationIcon} alt="notif" className="w-8 h-8"  onClick={()=>navigate('/notifications')}/>
+          <img src={notificationIcon} alt="notif" className="w-8 h-8" onClick={() => navigate('/notifications')} />
         </div>
       </div>
     
       <div className="px-4 mt-8">
         <div className="font-semibold text-base mt-2">My Personal Data</div>
         <div className="text-xs text-[#00000099] mb-4">Details about my personal data</div>
-          {/* Avatar and Name */}
-      <div className="flex flex-col items-center  mb-2">
-        <div className="relative">
-          <img src={user?.profilePic} alt="avatar" className="w-20 h-20 rounded-xl border-2 border-white object-cover bg-white" />
-          <span className="absolute -top-2 -right-2 bg-[#F8E6EF] rounded-full p-1 border border-white">
-            <img src={refreshIcon} alt="edit" className="w-5 h-5 bg-purple-500 p-0.5 rounded-full" />
-          </span>
+        <div className="flex flex-col items-center mb-2">
+          <div className="relative">
+            <img src={user?.user_image} alt="avatar" className="w-20 h-20 rounded-xl border-2 border-white object-cover bg-white" />
+            <span className="absolute -top-2 -right-2 bg-[#F8E6EF] rounded-full p-1 border border-white">
+              <img src={refreshIcon} alt="edit" className="w-5 h-5 bg-purple-500 p-0.5 rounded-full" />
+            </span>
+          </div>
+          <div className="text-lg font-bold mt-2">{user?.Name}</div>
         </div>
-        <div className="text-lg font-bold mt-2">{user?.name}</div>
-      </div>
-        {/* Personal Fields */}
         <div className="flex flex-col gap-3">
-          <label className="text-xs font-semibold text-gray-600 ">First Name</label>
+          <label className="text-xs font-semibold text-gray-600">First Name</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={userIconLight} alt="user" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.name} readOnly />
+            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Name} readOnly />
           </div>
           <label className="text-xs font-semibold text-gray-600">Email</label>
           <div className="relative">
@@ -86,30 +104,23 @@ const PersonalMobile = ({ onBack }: { onBack: () => void }) => {
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={employeeIcon} alt="empid" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.employeeId} readOnly />
+            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Employee_id} readOnly />
           </div>
           <label className="text-xs font-semibold text-gray-600">Role</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={rolesIcon} alt="role" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.role} readOnly />
+            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Role_id.role_name} readOnly />
           </div>
         </div>
-        {/* Work Details */}
         <div className="font-semibold text-base mt-6">Work Details</div>
         <div className="text-xs text-[#00000099] mb-4">Details about Work</div>
         <div className="flex flex-col gap-3">
           <label className="text-xs font-semibold text-[#00000099]">Onboarding Date</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={user?.workDetails.onboardingDate} readOnly />
+          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={user?.OnboardingDate} readOnly />
           <label className="text-xs font-semibold text-[#00000099]">Experience</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={`${user?.workDetails.yearsWithUs} years`} readOnly />
-          <label className="text-xs font-semibold text-[#00000099]">Shift Timings</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={user?.workDetails.shiftTimings} readOnly />
-          <label className="text-xs font-semibold text-[#00000099]">Total Leave</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={`${user?.workDetails.totalLeaves} Days`} readOnly />
-          <label className="text-xs font-semibold text-[#00000099]">Leave Left</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={`${user?.workDetails.leavesLeft} Days`} readOnly />
+          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={`${user?.yearsWithus} years`} readOnly />
         </div>
       </div>
     </div>
@@ -149,7 +160,7 @@ const OtpInputModal = ({ onContinue }: { onContinue: (otp: string) => void; }) =
   );
 };
 
-const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
+const ChangePasswordMobile = ({ onBack, user }: { onBack: () => void; user?: User }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -157,13 +168,12 @@ const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const canSave = currentPassword && newPassword && newPassword === confirmPassword;
-  const user = useStore((state) => state.user);
+  const navigate = useNavigate();
   const [showOtpSent, setShowOtpSent] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
 
   return (
     <div className="w-full min-h-screen bg-[#F9F6FB] pb-8">
-      {/* Header */}
       <div className="relative w-full h-20" style={{background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)"}}>
         <div className="flex items-center justify-between px-4 pt-6">
           <div className="flex gap-4">
@@ -172,13 +182,12 @@ const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
             </button>
             <span className="text-white text-2xl font-bold text-left">Change Password</span>
           </div>
-          <img src={notificationIcon} alt="notif" className="w-8 h-8" onClick={() => {}} />
+          <img src={notificationIcon} alt="notif" className="w-8 h-8" onClick={() => navigate('/notifications')} />
         </div>
       </div>
       <div className="px-4 mt-6">
         <div className="font-semibold text-lg mb-1 mt-2">Change Password</div>
         <div className="text-xs text-[#00000099] mb-4">Fill Informations To Change your Password</div>
-        {/* Current Password */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
             <label className="text-sm font-semibold text-[#222]">Current Password</label>
@@ -200,7 +209,6 @@ const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
             </span>
           </div>
         </div>
-        {/* New Password */}
         <div className="mb-4">
           <label className="text-sm font-semibold text-[#222] mb-1">New Password</label>
           <div className="relative">
@@ -219,7 +227,6 @@ const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
             </span>
           </div>
         </div>
-        {/* Confirm New Password */}
         <div className="mb-8">
           <label className="text-sm font-semibold text-[#222] mb-1">Confirm New Password</label>
           <div className="relative">
@@ -260,19 +267,11 @@ const ChangePasswordMobile = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-interface ProfileMobileProps {
-  forceSecurityTab?: boolean;
-  forceWorkTab?: boolean;
-}
-
-export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, forceWorkTab }) => {
-
-  const user = useStore((state) => state.user);
+export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, forceWorkTab, user }) => {
   const { isActive, activeTraining, steps, currentStep, complete } = useWalkthroughStore();
   const [selectedTab, setSelectedTab] = useState<null | 'work' | 'personal' | 'security' | 'sign-out' | 'OrderHistory' | 'Personal'>(null);
-  const navigate= useNavigate();
+  const navigate = useNavigate();
 
-  // Only use forceWorkTab/forceSecurityTab if NOT in profile training
   useEffect(() => {
     if (activeTraining !== 'profile') {
       if (forceSecurityTab && selectedTab !== 'security') {
@@ -283,7 +282,6 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
     }
   }, [forceSecurityTab, forceWorkTab, selectedTab, activeTraining]);
 
-  // For profile training, use walkthrough step logic
   useEffect(() => {
     if (isActive && activeTraining === 'profile') {
       if (steps[currentStep]?.selector === '.profile-work-tab' && selectedTab !== 'work') {
@@ -296,7 +294,6 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
         setSelectedTab('sign-out');
       }
     }
-    // End training and navigate after last step
     if (
       isActive &&
       activeTraining === 'profile' &&
@@ -312,56 +309,53 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
   const [showWorkSummary, setShowWorkSummary] = useState(false);
   const [showPersonalMobile, setShowPersonalMobile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-console.log(forceSecurityTab)
+
   if (showWorkSummary) {
     return <WorkSummary layout="mobile" />;
   }
 
   if (showPersonalMobile) {
-    return <PersonalMobile onBack={() => setShowPersonalMobile(false)} />;
+    return <PersonalMobile onBack={() => setShowPersonalMobile(false)} user={user} />;
   }
 
   if (showChangePassword) {
-    return <ChangePasswordMobile onBack={() => setShowChangePassword(false)} />;
+    return <ChangePasswordMobile onBack={() => setShowChangePassword(false)} user={user} />;
   }
 
   return (
-    <div className={`w-full min-h-screen bg-[#F9F6FB] pb-8  profile-highlight`}>
-      {/* Header */}
+    <div className={`w-full min-h-screen bg-[#F9F6FB] pb-8 profile-highlight`}>
       <div
-        className="relative w-full h-32 "
+        className="relative w-full h-32"
         style={{
           background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)",
         }}
       >
         <div className="flex items-center justify-between px-6 pt-6">
           <button className="text-white text-2xl">
-            <img src={backIcon} alt="back" onClick={()=>navigate(-1)}/>
+            <img src={backIcon} alt="back" onClick={() => navigate(-1)} />
           </button>
           <div className="flex items-center gap-2">
             <img src={accountIcon} alt="Profile" className="w-6 h-6" />
             <span className="text-white text-2xl font-bold">Profile</span>
           </div>
-          <div className="w-6" /> {/* Spacer for symmetry */}
+          <div className="w-6" />
         </div>
         <div className="absolute left-1/2 top-30 transform -translate-x-1/2 -translate-y-1/2">
           <img
-            src={user?.profilePic}
+            src={user?.user_image}
             alt="avatar"
             className="w-20 h-20 rounded-xl border-2 border-white object-cover bg-white"
           />
         </div>
       </div>
-      {/* Name and Role */}
       <div className="flex flex-col items-center mt-12">
-        <span className="text-xl font-bold text-[#0B0B0B]">{user?.name}</span>
-        <span className=" text-[#0B0B0B] font-normal text-sm flex items-center gap-1">
-          {user?.role}
+        <span className="text-xl font-bold text-[#0B0B0B]">{user?.Name}</span>
+        <span className="text-[#0B0B0B] font-normal text-sm flex items-center gap-1">
+          {user?.Role_id.role_name}
           <span className="ml-1 w-4 h-4 inline-block align-middle">
             <img src={rightTick} alt="rightTick" />
           </span>
         </span>
-        {/* Clock In Button */}
         <button
           className="mt-3 flex items-center gap-2 px-6 py-2 rounded-xl text-white font-semibold text-base shadow-md cursor-pointer"
           style={{
@@ -372,20 +366,18 @@ console.log(forceSecurityTab)
           <img src={clockIcon} alt="Clock In" className="w-5 h-5" />
         </button>
       </div>
-      {/* Tabs */}
       <div className="flex justify-center mt-6 px-2">
         <div className="flex w-full bg-[#F8EAEE] rounded-lg p-1">
           <button
-            className={`flex-1 py-1 rounded-lg text-lg font-bold  transition-all duration-200 ${
+            className={`flex-1 py-1 rounded-lg text-lg font-bold transition-all duration-200 ${
               selectedTab === "OrderHistory"
-                ? " text-white"
-                : "text-[#0000004D] "
+                ? "text-white"
+                : "text-[#0000004D]"
             }`}
             style={
               selectedTab === "OrderHistory"
                 ? {
-                    background:
-                      "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
+                    background: "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
                   }
                 : {}
             }
@@ -395,13 +387,12 @@ console.log(forceSecurityTab)
           </button>
           <button
             className={`flex-1 py-1 rounded-lg text-lg font-bold transition-all duration-200 ${
-              selectedTab === "Personal" ? "text-white" : "text-[#0000004D] "
+              selectedTab === "Personal" ? "text-white" : "text-[#0000004D]"
             }`}
             style={
               selectedTab === "Personal"
                 ? {
-                    background:
-                      "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
+                    background: "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
                   }
                 : {}
             }
@@ -411,11 +402,10 @@ console.log(forceSecurityTab)
           </button>
         </div>
       </div>
-      {/* Info Section */}
       <div className="mt-6 px-4">
         <div className="flex justify-between">
-          <div className="font-semibold text-base text-[#000] mb-2 ">Info</div>
-          <img src={rightArrow} alt="rightArrow"  onClick={() => setShowPersonalMobile(true)}/>
+          <div className="font-semibold text-base text-[#000] mb-2">Info</div>
+          <img src={rightArrow} alt="rightArrow" onClick={() => setShowPersonalMobile(true)} />
         </div>
         <div className="rounded-xl bg-[#F8EAEE] p-4 flex flex-col gap-6">
           <div className="flex items-center gap-6 text-[#6A1B9A]">
@@ -425,25 +415,24 @@ console.log(forceSecurityTab)
           <div className="flex items-center gap-6 text-[#6A1B9A]">
             <img src={userIcon} alt="empid" className="w-5 h-5" />
             <span className="text-sm text-[#00000099]">
-              EMP id: {user?.employeeId}
+              EMP id: {user?.Employee_id}
             </span>
           </div>
           <div className="flex items-center gap-6 text-[#6A1B9A]">
             <img src={callIcon} alt="phone" className="w-5 h-5" />
             <span className="text-sm text-[#00000099]">{user?.phone}</span>
           </div>
-          <div className="flex items-center justify-between"  onClick={() => setShowPersonalMobile(true)}>
+          <div className="flex items-center justify-between" onClick={() => setShowPersonalMobile(true)}>
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img src={rolesIcon} alt="roles" className="w-5 h-5" />
               <span className="text-sm text-[#00000099]">
-                Roles & Responsibilities
+                {user?.Responsibility_id.Responsibility_name}
               </span>
             </div>
             <img src={rightArrow} alt="rightArrow" />
           </div>
         </div>
       </div>
-      {/* Training Section */}
       <div className="mt-6 px-4">
         <div className="font-semibold text-base text-[#1E1E1E] mb-2">
           Training
@@ -457,15 +446,13 @@ console.log(forceSecurityTab)
             />
             <span className="text-sm text-[#00000099]">Employee Training</span>
           </div>
-
           <img src={rightArrow} onClick={() => {}} alt="rightArrow" />
         </div>
       </div>
-      {/* Account Section */}
       <div className="mt-6 px-4">
-        <div className="font-semibold text-base  mb-2">Account</div>
+        <div className="font-semibold text-base mb-2">Account</div>
         <div className="flex flex-col rounded-lg bg-[#F8E6EF]">
-          <div className="rounded-xl  p-4 flex items-center  justify-between gap-6"  onClick={() => setShowPersonalMobile(true)}>
+          <div className="rounded-xl p-4 flex items-center justify-between gap-6" onClick={() => setShowPersonalMobile(true)}>
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img
                 src={personalDataIcon}
@@ -476,7 +463,7 @@ console.log(forceSecurityTab)
             </div>
             <img src={rightArrow} alt="rightArrow" />
           </div>
-          <div className="rounded-xl  p-4 flex items-center  justify-between gap-6" onClick={() => setShowWorkSummary(true)}>
+          <div className="rounded-xl p-4 flex items-center justify-between gap-6" onClick={() => setShowWorkSummary(true)}>
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img
                 src={workSummaryIcon}
@@ -485,11 +472,10 @@ console.log(forceSecurityTab)
               />
               <span className="text-sm text-[#00000099]">Work Summary</span>
             </div>
-            <img src={rightArrow}  alt="rightArrow" />
+            <img src={rightArrow} alt="rightArrow" />
           </div>
         </div>
       </div>
-      {/* Settings Section */}
       <div className="mt-6 px-4">
         <div className="font-semibold text-base text-[#1E1E1E] mb-2">
           Settings
@@ -503,29 +489,29 @@ console.log(forceSecurityTab)
             />
             <span className="text-sm text-[#00000099]">Change Password</span>
           </div>
-          <div className="flex items-center gap-6" onClick={()=>navigate('/notifications')}>
+          <div className="flex items-center gap-6" onClick={() => navigate('/notifications')}>
             <img
               src={notificationIconFilled}
               alt="notifications"
-              className="w-5 h-5 "
+              className="w-5 h-5"
             />
             <span className="text-sm text-[#00000099]">Notifications</span>
           </div>
           <div className="flex items-center gap-6">
-            <span className=" w-5 h-5 rounded-full bg-gradient-to-br from-[#6A1B9A] to-[#D32F2F] flex items-center justify-center">
+            <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#6A1B9A] to-[#D32F2F] flex items-center justify-center">
               <span className="text-white text-xs font-bold">T</span>
             </span>
             <span className="text-sm text-[#00000099]">Terms & Conditions</span>
           </div>
           <div className="flex items-center gap-6">
-            <span className=" w-5 h-5 rounded-full bg-gradient-to-br from-[#6A1B9A] to-[#D32F2F] flex items-center justify-center">
+            <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#6A1B9A] to-[#D32F2F] flex items-center justify-center">
               <span className="text-white text-xs font-bold">P</span>
             </span>
             <span className="text-sm text-[#00000099]">Privacy Policy</span>
           </div>
           <div className="flex items-center gap-6">
             <img src={logoutIcon} alt="sign out" className="w-5 h-5" />
-            <span className="text-sm text-[#00000099] ">Sign out</span>
+            <span className="text-sm text-[#00000099]">Sign out</span>
           </div>
         </div>
       </div>
