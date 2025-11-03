@@ -84,7 +84,7 @@ const AppLayout: React.FC = () => {
     <div className="flex bg-gray-50">
       <Sidebar onLogoutClick={handleOpenLogoutModal} />
       <Header />
-      <main className="flex flex-col w-[100vw] min-h-0 lg:pt-[112px]  xl:pt-[112px] 2xl:pt-[112px] lg:pl-[250px]  xl:pl-[250px]  2xl:pl-[250px] ">
+      <main className="flex flex-col max-w-full min-h-0 lg:pt-28 lg:pl-[250px]">
         <Outlet />
       </main>
       <MobileNavBar />
