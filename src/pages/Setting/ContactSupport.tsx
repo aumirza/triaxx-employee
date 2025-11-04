@@ -5,50 +5,10 @@ import FAQAccordion from "./FAQAccordion";
 import { useWalkthroughStore } from "@/store/walkthroughStore";
 import { profileTrainingSteps } from "@/walkthrough/steps";
 
-const FAQ_DATA = [
-  {
-    heading: "Orders & Reservations",
-    items: [
-      {
-        id: 1,
-        question:
-          "I don't need a brand strategist but I need help executing an upcoming campaign. Can we still work together?",
-        answer:
-          "Yes, we can work together on your campaign even if you don't need a brand strategist.",
-      },
-      {
-        id: 2,
-        question:
-          "I don't need a brand strategist but I need help executing an upcoming campaign. Can we still work together?",
-        answer:
-          "Yes, we can work together on your campaign even if you don't need a brand strategist.",
-      },
-    ],
-  },
-  {
-    heading: "Invoices & Feed Backs",
-    items: [
-      {
-        id: 3,
-        question:
-          "I don't need a brand strategist but I need help executing an upcoming campaign. Can we still work together?",
-        answer:
-          "Yes, we can work together on your campaign even if you don't need a brand strategist.",
-      },
-      {
-        id: 4,
-        question:
-          "I don't need a brand strategist but I need help executing an upcoming campaign. Can we still work together?",
-        answer:
-          "Yes, we can work together on your campaign even if you don't need a brand strategist.",
-      },
-    ],
-  },
-];
-
 const ContactSupport: React.FC = () => {
   const navigate = useNavigate();
-  const { settingsHighlight, setSettingsHighlight, startTraining } = useWalkthroughStore();
+  const { settingsHighlight, setSettingsHighlight, startTraining } =
+    useWalkthroughStore();
 
   React.useEffect(() => {
     if (settingsHighlight === "contact-support") {
@@ -109,9 +69,9 @@ const ContactSupport: React.FC = () => {
             Create Ticket
           </button>
           <div className=" gradient-border ">
-            <button className="w-[320px] max-w-xs rounded-lg font-semibold  gradient-border-inner bg-white"
-                        onClick={() => navigate("/settings/tickets")}
-
+            <button
+              className="w-[320px] max-w-xs rounded-lg font-semibold  gradient-border-inner bg-white"
+              onClick={() => navigate("/settings/tickets")}
             >
               View Raised Ticket
             </button>
@@ -120,7 +80,7 @@ const ContactSupport: React.FC = () => {
         {/* FAQ Section */}
         <div className="mt-12">
           <div className="text-3xl font-bold mb-8">FAQ's</div>
-          <FAQAccordion sections={FAQ_DATA} />
+          <FAQAccordion />
         </div>
       </div>
     </div>
