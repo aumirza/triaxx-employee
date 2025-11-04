@@ -31,3 +31,21 @@ export async function sendOtp(email: string): Promise<SendOtpResponse> {
     throw new Error(message);
   }
 }
+
+export async function verifyOtp(
+  payload: VerifyOtpPayload
+): Promise<VerifyOtpResponse> {
+  try {
+    const { data } = await api.post(
+      "/api/user/forget-password/verify-otp",
+      payload
+    );
+    return data;
+  } catch (error: unknown) {
+    const err = error as Error & { response?: { data?: { message?: string } } };
+    const message =
+      err.response?.data?.message ||
+      (err instanceof Error ? err.message : "Failed to verify OTP");
+    throw new Error(message);
+  }
+}
