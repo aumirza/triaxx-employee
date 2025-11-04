@@ -8,6 +8,8 @@ import EyeIconImg from "@/assets/eye_icon.svg";
 import EyeSlashIconImg from "@/assets/eye-password-hide.svg";
 import SuccessCheckIcon from "@/assets/auth/right_tick.svg";
 
+import { verifyOtp } from "@/api/authApi";
+
 const ResetPasswordPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -19,6 +21,7 @@ const ResetPasswordPage: React.FC = () => {
 
   const location = useLocation();
   const email = location.state?.email;
+  const otp = location.state?.otp;
 
   const handleResetPassword = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -29,13 +32,11 @@ const ResetPasswordPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      console.log(
-        "Resetting password for:",
-        email,
-        "with new password:",
-        password
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call verify-otp endpoint with email, otp and newPassword
+      if (!email || !otp) {
+        throw new Error("Missing email or OTP. Please retry the flow.");
+      }
+      await verifyOtp({ email, otp, newPassword: password });
       setIsSuccess(true);
     } catch (err) {
       setError(
