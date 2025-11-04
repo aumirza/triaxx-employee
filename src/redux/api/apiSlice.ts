@@ -56,6 +56,24 @@ interface NotificationsApiResponse {
   data: NotificationMapItem[];
 }
 
+// FAQ types
+interface FAQItem {
+  _id: string;
+  faq_question: string;
+  faq_answer: string;
+  Status?: boolean;
+  CreateBy?: Record<string, unknown> | null;
+  UpdatedAt?: string | null;
+  CreateAt?: string | null;
+  faq_in_id?: number;
+}
+
+interface FAQApiResponse {
+  success: boolean;
+  message: string;
+  data: FAQItem[];
+}
+
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
@@ -98,6 +116,11 @@ export const apiSlice = createApi({
       query: () => "/api/master/notifications_map_employee/all",
       // We can keep the raw response shape here; components may map fields as needed
     }),
+    // Get all FAQs
+    getFaqs: builder.query<FAQApiResponse, void>({
+      query: () => "/api/master/faq/all",
+      // keep raw server shape; components will read `data` field
+    }),
   }),
 });
 
@@ -105,4 +128,5 @@ export const {
   useLoginMutation,
   useFetchUserProfileQuery,
   useGetNotificationsQuery,
+  useGetFaqsQuery,
 } = apiSlice;
