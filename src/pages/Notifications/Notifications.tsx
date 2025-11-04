@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useUserStore } from "@/store/zustandStores";
 import userAvatar from "@/assets/profile/user.svg";
-import { getCurrentEmployeeNotifications } from "@/api/employeeApi";
+import { useGetNotificationsQuery } from "@/redux/api/apiSlice";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import backIcon from "@/assets/back.svg"; // Adjust path if needed
 // import notificationIcon from "@/assets/profile/notification_light.svg"; // Adjust path if needed
@@ -69,24 +69,21 @@ function groupNotifications(notifications: any[]) {
 }
 
 const NotificationList: React.FC = () => {
-  const fetchUserNotifications = useUserStore((s) => s.fetchUserNotifications);
   const markNotificationAsRead = useUserStore((s) => s.markNotificationAsRead);
-  type Notification = Awaited<
-    ReturnType<typeof getCurrentEmployeeNotifications>
-  >[number];
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: apiResp, isLoading } = useGetNotificationsQuery();
 
   const isMobile = useMediaQuery("(max-width: 640px)");
   const navigate = useNavigate();
   // const { settingsHighlight, setSettingsHighlight } = useWalkthroughStore();
 
-  useEffect(() => {
-    fetchUserNotifications().then((data) => {
-      setNotifications(data as Notification[]);
-      setLoading(false);
-    });
-  }, [fetchUserNotifications]);
+  // Map API response to the shape used by this component
+  const notifications = (apiResp?.data ?? []).map((item) => ({
+    id: item._id ?? "",
+    title: item.Notifications_id?.Notifications ?? "Notification",
+    message: item.Notifications_id?.Notifications ?? "",
+    createdAt: item.CreateAt ?? item.UpdatedAt ?? new Date().toISOString(),
+    isRead: !!item.isRead,
+  }));
 
   // useEffect(() => {
   //   if (settingsHighlight === 'notifications') {
@@ -102,7 +99,7 @@ const NotificationList: React.FC = () => {
     navigate(-1);
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (isLoading) return <div className="p-8">Loading...</div>;
 
   const grouped = groupNotifications(notifications);
 
