@@ -1,18 +1,28 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { setupListeners } from '@reduxjs/toolkit/query';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
-import sessionStorage from 'redux-persist/lib/storage/session';
-import { combineReducers } from 'redux';
-import { apiSlice } from './api/apiSlice';
-import authReducer from './slice/authSlice';
-import { orderHistoryApi } from './api/orderHistoryApi';
-import { quickOrderApi } from './api/quickOrderSlice';
-import { userApi } from './api/userApi';
+import { configureStore } from "@reduxjs/toolkit";
+import { setupListeners } from "@reduxjs/toolkit/query";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import sessionStorage from "redux-persist/lib/storage/session";
+import { combineReducers } from "redux";
+import { apiSlice } from "./api/apiSlice";
+import { tablesApi } from "./api/tablesApi";
+import authReducer from "./slice/authSlice";
+import { orderHistoryApi } from "./api/orderHistoryApi";
+import { quickOrderApi } from "./api/quickOrderSlice";
+import { userApi } from "./api/userApi";
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage: sessionStorage,
-  whitelist: ['auth'],
+  whitelist: ["auth"],
 };
 
 const rootReducer = combineReducers({
@@ -20,6 +30,7 @@ const rootReducer = combineReducers({
   [orderHistoryApi.reducerPath]: orderHistoryApi.reducer,
   [quickOrderApi.reducerPath]: quickOrderApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
+  [tablesApi.reducerPath]: tablesApi.reducer,
   auth: authReducer,
 });
 
@@ -32,7 +43,13 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(apiSlice.middleware, orderHistoryApi.middleware, quickOrderApi.middleware, userApi.middleware),
+    }).concat(
+      apiSlice.middleware,
+      orderHistoryApi.middleware,
+      quickOrderApi.middleware,
+      userApi.middleware,
+      tablesApi.middleware
+    ),
 });
 
 setupListeners(store.dispatch);
