@@ -14,7 +14,14 @@ export interface FloorType {
   } | null;
   Floor_Name: string;
   Total_Table_Count?: number;
-  //   [k: string]: any;
+  ["Seating-Persons_Count"]?: number;
+  Details?: string;
+  Status?: boolean;
+  CreateBy?: number | Record<string, unknown>;
+  CreateAt?: string;
+  UpdatedAt?: string;
+  Floor_id: number;
+  UpdatedBy?: number | null;
 }
 
 // Fetch all floors from backend. Falls back to a small dummy set on error.
