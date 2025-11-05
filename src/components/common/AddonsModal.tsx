@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { OrderItem } from "@/types/order";
+import { useGetItemAddonsQuery } from "@/redux/api/apiSlice";
+import type { ItemAddon } from "@/types/addon";
 
 interface AddonsModalProps {
   open: boolean;
@@ -10,14 +12,7 @@ interface AddonsModalProps {
   onSave: (data: { addons: string[]; note: string }) => void;
 }
 
-const dummyAddons = [
-  { label: "No Ice", price: 0 },
-  { label: "Less Sugar", price: 0 },
-  { label: "No Sugar", price: 0 },
-  { label: "Extra Cream", price: 20 },
-  { label: "Extra Toppings", price: 20 },
-  { label: "Extra Thick", price: 20 },
-];
+// We'll fetch addons from server via RTK Query.
 
 const AddonsModal: React.FC<AddonsModalProps> = ({
   open,
@@ -29,6 +24,8 @@ const AddonsModal: React.FC<AddonsModalProps> = ({
 }) => {
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [note, setNote] = useState("");
+  const { data: addonsResp, isLoading, isError } = useGetItemAddonsQuery();
+  const serverAddons: ItemAddon[] = addonsResp?.data ?? [];
 
   useEffect(() => {
     if (open) {
@@ -37,14 +34,20 @@ const AddonsModal: React.FC<AddonsModalProps> = ({
     }
   }, [open, item]);
 
-  // Split addons into two groups
-  const noPriceAddons = dummyAddons.filter((a) => a.price === 0);
-  const withPriceAddons = dummyAddons.filter((a) => a.price > 0);
+  // Split addons into two groups using server data
+  const noPriceAddons = serverAddons.filter(
+    (a) => (a.prices ?? 0) === 0 && a.Status
+  );
+  const withPriceAddons = serverAddons.filter(
+    (a) => (a.prices ?? 0) > 0 && a.Status
+  );
 
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out ${
-        open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        open
+          ? "opacity-100 pointer-events-auto"
+          : "opacity-0 pointer-events-none"
       }`}
     >
       <div
@@ -74,50 +77,66 @@ const AddonsModal: React.FC<AddonsModalProps> = ({
             <div className="font-bold text-lg text-left mb-6">Addons</div>
             {/* No price addons inline */}
             <div className="flex flex-row gap-6 mb-4">
-              {noPriceAddons.map((addon) => (
-                <label
-                  key={addon.label}
-                  className="flex items-center gap-2 cursor-pointer text-base font-normal"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAddons.includes(addon.label)}
-                    onChange={() =>
-                      setSelectedAddons((prev) =>
-                        prev.includes(addon.label)
-                          ? prev.filter((a) => a !== addon.label)
-                          : [...prev, addon.label]
-                      )
-                    }
-                    className="accent-[#6A1B9A] w-4 h-4"
-                  />
-                  <span>{addon.label}</span>
-                </label>
-              ))}
+              {isLoading ? (
+                <div className="text-sm text-gray-500">Loading addons...</div>
+              ) : isError ? (
+                <div className="text-sm text-red-500">
+                  Failed to load addons
+                </div>
+              ) : (
+                noPriceAddons.map((addon) => (
+                  <label
+                    key={addon._id}
+                    className="flex items-center gap-2 cursor-pointer text-base font-normal"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedAddons.includes(addon.Addons)}
+                      onChange={() =>
+                        setSelectedAddons((prev) =>
+                          prev.includes(addon.Addons)
+                            ? prev.filter((a) => a !== addon.Addons)
+                            : [...prev, addon.Addons]
+                        )
+                      }
+                      className="accent-[#6A1B9A] w-4 h-4"
+                    />
+                    <span>{addon.Addons}</span>
+                  </label>
+                ))
+              )}
             </div>
             {/* With price addons stacked */}
             <div className="flex flex-col gap-2 mb-8">
-              {withPriceAddons.map((addon) => (
-                <label
-                  key={addon.label}
-                  className="flex items-center gap-2 cursor-pointer text-base font-normal"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAddons.includes(addon.label)}
-                    onChange={() =>
-                      setSelectedAddons((prev) =>
-                        prev.includes(addon.label)
-                          ? prev.filter((a) => a !== addon.label)
-                          : [...prev, addon.label]
-                      )
-                    }
-                    className="accent-[#6A1B9A] w-4 h-4"
-                  />
-                  <span>{addon.label}</span>
-                  <span className="text-xs text-[#8E8E93] font-normal">(Extra {addon.price} XOF)</span>
-                </label>
-              ))}
+              {isLoading ? (
+                <div className="text-sm text-gray-500">&nbsp;</div>
+              ) : isError ? (
+                <div className="text-sm text-red-500">&nbsp;</div>
+              ) : (
+                withPriceAddons.map((addon) => (
+                  <label
+                    key={addon._id}
+                    className="flex items-center gap-2 cursor-pointer text-base font-normal"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedAddons.includes(addon.Addons)}
+                      onChange={() =>
+                        setSelectedAddons((prev) =>
+                          prev.includes(addon.Addons)
+                            ? prev.filter((a) => a !== addon.Addons)
+                            : [...prev, addon.Addons]
+                        )
+                      }
+                      className="accent-[#6A1B9A] w-4 h-4"
+                    />
+                    <span>{addon.Addons}</span>
+                    <span className="text-xs text-[#8E8E93] font-normal">
+                      (Extra {addon.prices} XOF)
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
             {/* Note section */}
             <div className="mb-8">
