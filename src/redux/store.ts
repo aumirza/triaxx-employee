@@ -19,6 +19,7 @@ import { orderHistoryApi } from "./api/orderHistoryApi";
 import { quickOrderApi } from "./api/quickOrderSlice";
 import { userApi } from "./api/userApi";
 import { supportTicketsApi } from "./api/supportTicketsApi";
+import { clockApi } from "./api/clockApi";
 
 const persistConfig = {
   key: "root",
@@ -33,6 +34,7 @@ const rootReducer = combineReducers({
   [userApi.reducerPath]: userApi.reducer,
   [tablesApi.reducerPath]: tablesApi.reducer,
   [supportTicketsApi.reducerPath]: supportTicketsApi.reducer,
+  [clockApi.reducerPath]: clockApi.reducer,
   auth: authReducer,
 });
 
@@ -52,6 +54,7 @@ export const store = configureStore({
       userApi.middleware,
       tablesApi.middleware,
       supportTicketsApi.middleware,
+      clockApi.middleware
     ),
 });
 
