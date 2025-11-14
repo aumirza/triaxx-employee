@@ -15,12 +15,13 @@ import clockIcon from "@/assets/profile/clock_icon.svg";
 import backIcon from "@/assets/back.svg";
 import rightTick from "@/assets/profile/right_tick.svg";
 import rightArrow from "@/assets/profile/arrow-right.svg";
-import WorkSummary from './WorkSummary';
+import WorkSummary from "./WorkSummary";
 import refreshIcon from "@/assets/profile/refresh.svg";
-import userIconLight from '@/assets/profile/user.svg';
+import userIconLight from "@/assets/profile/user.svg";
+import { useChangePasswordMutation } from "@/redux/api/userApi";
 import employeeIcon from "@/assets/profile/personal_data_icon.svg";
-import lockIcon from '@/assets/profile/finger-scan.svg';
-import eyeIcon from '@/assets/eye_icon.svg';
+import lockIcon from "@/assets/profile/finger-scan.svg";
+import eyeIcon from "@/assets/eye_icon.svg";
 import { useNavigate } from "react-router-dom";
 import { useWalkthroughStore } from "@/store/walkthroughStore";
 
@@ -49,262 +50,463 @@ interface ProfileMobileProps {
   user?: User;
 }
 
-const PersonalMobile = ({ onBack, user }: { onBack: () => void; user?: User }) => {
+const PersonalMobile = ({
+  onBack,
+  user,
+}: {
+  onBack: () => void;
+  user?: User;
+}) => {
   const navigate = useNavigate();
   return (
-    <div className="w-full min-h-screen bg-[#F9F6FB] pb-8"> 
-      <div className="relative w-full h-20" style={{background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)"}}>
+    <div className="w-full min-h-screen bg-[#F9F6FB] pb-8">
+      <div
+        className="relative w-full h-20"
+        style={{
+          background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)",
+        }}
+      >
         <div className="flex items-center justify-between px-4 pt-6">
           <div className="flex gap-4">
             <button className="text-white text-2xl" onClick={onBack}>
               <img src={backIcon} alt="back" />
             </button>
-            <span className="text-white text-2xl font-bold text-left">Profile Info</span>
+            <span className="text-white text-2xl font-bold text-left">
+              Profile Info
+            </span>
           </div>
-          <img src={notificationIcon} alt="notif" className="w-8 h-8" onClick={() => navigate('/notifications')} />
+          <img
+            src={notificationIcon}
+            alt="notif"
+            className="w-8 h-8"
+            onClick={() => navigate("/notifications")}
+          />
         </div>
       </div>
-    
+
       <div className="px-4 mt-8">
         <div className="font-semibold text-base mt-2">My Personal Data</div>
-        <div className="text-xs text-[#00000099] mb-4">Details about my personal data</div>
+        <div className="text-xs text-[#00000099] mb-4">
+          Details about my personal data
+        </div>
         <div className="flex flex-col items-center mb-2">
           <div className="relative">
-            <img src={user?.user_image} alt="avatar" className="w-20 h-20 rounded-xl border-2 border-white object-cover bg-white" />
+            <img
+              src={user?.user_image}
+              alt="avatar"
+              className="w-20 h-20 rounded-xl border-2 border-white object-cover bg-white"
+            />
             <span className="absolute -top-2 -right-2 bg-[#F8E6EF] rounded-full p-1 border border-white">
-              <img src={refreshIcon} alt="edit" className="w-5 h-5 bg-purple-500 p-0.5 rounded-full" />
+              <img
+                src={refreshIcon}
+                alt="edit"
+                className="w-5 h-5 bg-purple-500 p-0.5 rounded-full"
+              />
             </span>
           </div>
           <div className="text-lg font-bold mt-2">{user?.Name}</div>
         </div>
         <div className="flex flex-col gap-3">
-          <label className="text-xs font-semibold text-gray-600">First Name</label>
+          <label className="text-xs font-semibold text-gray-600">
+            First Name
+          </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={userIconLight} alt="user" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Name} readOnly />
+            <input
+              className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full"
+              value={user?.Name}
+              readOnly
+            />
           </div>
           <label className="text-xs font-semibold text-gray-600">Email</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={emailIcon} alt="email" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.email} readOnly />
+            <input
+              className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full"
+              value={user?.email}
+              readOnly
+            />
           </div>
-          <label className="text-xs font-semibold text-gray-600">Phone Number</label>
+          <label className="text-xs font-semibold text-gray-600">
+            Phone Number
+          </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={callIcon} alt="phone" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.phone} readOnly />
+            <input
+              className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full"
+              value={user?.phone}
+              readOnly
+            />
           </div>
           <label className="text-xs font-semibold text-gray-600">Emp id</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={employeeIcon} alt="empid" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Employee_id} readOnly />
+            <input
+              className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full"
+              value={user?.Employee_id}
+              readOnly
+            />
           </div>
           <label className="text-xs font-semibold text-gray-600">Role</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={rolesIcon} alt="role" className="w-5 h-5" />
             </span>
-            <input className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full" value={user?.Role_id.role_name} readOnly />
+            <input
+              className="rounded-lg border border-[#E0E0E0] pl-10 pr-2 py-2 bg-white w-full"
+              value={user?.Role_id.role_name}
+              readOnly
+            />
           </div>
         </div>
         <div className="font-semibold text-base mt-6">Work Details</div>
         <div className="text-xs text-[#00000099] mb-4">Details about Work</div>
         <div className="flex flex-col gap-3">
-          <label className="text-xs font-semibold text-[#00000099]">Onboarding Date</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={user?.OnboardingDate} readOnly />
-          <label className="text-xs font-semibold text-[#00000099]">Experience</label>
-          <input className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white" value={`${user?.yearsWithus} years`} readOnly />
+          <label className="text-xs font-semibold text-[#00000099]">
+            Onboarding Date
+          </label>
+          <input
+            className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white"
+            value={user?.OnboardingDate}
+            readOnly
+          />
+          <label className="text-xs font-semibold text-[#00000099]">
+            Experience
+          </label>
+          <input
+            className="rounded-lg border border-[#E0E0E0] px-4 py-2 bg-white"
+            value={`${user?.yearsWithus} years`}
+            readOnly
+          />
         </div>
       </div>
     </div>
   );
 };
 
-const OtpSentModal = ({ email, onVerify }: { email: string; onVerify: () => void; }) => (
+const OtpSentModal = ({
+  email,
+  onVerify,
+}: {
+  email: string;
+  onVerify: () => void;
+}) => (
   <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-30">
     <div className="bg-white rounded-t-2xl shadow-xl p-6 w-full max-w-md animate-bottom-sheet-in flex flex-col items-center mb-0">
-      <div className="font-bold text-lg mb-1 text-center">OTP Sent to Registered Email</div>
-      <div className="text-xs text-[#00000099] mb-2 text-center">An Authentication code has sent to your email 🚀</div>
+      <div className="font-bold text-lg mb-1 text-center">
+        OTP Sent to Registered Email
+      </div>
+      <div className="text-xs text-[#00000099] mb-2 text-center">
+        An Authentication code has sent to your email 🚀
+      </div>
       <div className="font-semibold text-base mb-4 text-center">{email}</div>
-      <button className="w-full py-2 rounded-xl text-white font-semibold text-base bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F]" onClick={onVerify}>Verify OTP</button>
+      <button
+        className="w-full py-2 rounded-xl text-white font-semibold text-base bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F]"
+        onClick={onVerify}
+      >
+        Verify OTP
+      </button>
     </div>
   </div>
 );
 
-const OtpInputModal = ({ onContinue }: { onContinue: (otp: string) => void; }) => {
-  const [otp, setOtp] = useState('');
+const OtpInputModal = ({
+  onContinue,
+}: {
+  onContinue: (otp: string) => void;
+}) => {
+  const [otp, setOtp] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-30">
       <div className="bg-white rounded-t-2xl shadow-xl p-6 w-full max-w-md animate-bottom-sheet-in flex flex-col items-center mb-0">
         <div className="font-bold text-lg mb-1 text-center">Verify OTP</div>
-        <div className="text-xs text-[#00000099] mb-4 text-center">Please Enter the Authentication received to your registered email</div>
-        <label className="w-full text-left text-sm font-semibold mb-1">Enter OTP</label>
+        <div className="text-xs text-[#00000099] mb-4 text-center">
+          Please Enter the Authentication received to your registered email
+        </div>
+        <label className="w-full text-left text-sm font-semibold mb-1">
+          Enter OTP
+        </label>
         <input
           ref={inputRef}
           className="rounded-lg border border-[#E0E0E0] px-4 py-2 w-full mb-4 text-center"
           value={otp}
-          onChange={e => setOtp(e.target.value)}
+          onChange={(e) => setOtp(e.target.value)}
           placeholder="Enter OTP"
         />
-        <button className="w-full py-2 rounded-xl text-white font-semibold text-base bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F]" onClick={() => onContinue(otp)} disabled={!otp}>Continue</button>
+        <button
+          className="w-full py-2 rounded-xl text-white font-semibold text-base bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F]"
+          onClick={() => onContinue(otp)}
+          disabled={!otp}
+        >
+          Continue
+        </button>
       </div>
     </div>
   );
 };
 
-const ChangePasswordMobile = ({ onBack, user }: { onBack: () => void; user?: User }) => {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const ChangePasswordMobile = ({
+  onBack,
+  user,
+}: {
+  onBack: () => void;
+  user?: User;
+}) => {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const canSave = currentPassword && newPassword && newPassword === confirmPassword;
+  const canSave =
+    currentPassword && newPassword && newPassword === confirmPassword;
   const navigate = useNavigate();
   const [showOtpSent, setShowOtpSent] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
 
+  const [changePassword, { isLoading: isChangingPassword }] =
+    useChangePasswordMutation();
+
+  const handleUpdatePassword = async () => {
+    if (!canSave) {
+      return;
+    }
+
+    try {
+      const result = await changePassword({
+        currentPassword,
+        newPassword,
+      }).unwrap();
+
+      alert(result.message || "Password changed successfully!");
+
+      // Clear form and go back
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      onBack();
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; message?: string };
+      alert(err.data?.message || err.message || "Failed to change password");
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#F9F6FB] pb-8">
-      <div className="relative w-full h-20" style={{background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)"}}>
+      <div
+        className="relative w-full h-20"
+        style={{
+          background: "linear-gradient(90deg, #D32F2F 0%, #6A1B9A 100%)",
+        }}
+      >
         <div className="flex items-center justify-between px-4 pt-6">
           <div className="flex gap-4">
             <button className="text-white text-2xl" onClick={onBack}>
               <img src={backIcon} alt="back" />
             </button>
-            <span className="text-white text-2xl font-bold text-left">Change Password</span>
+            <span className="text-white text-2xl font-bold text-left">
+              Change Password
+            </span>
           </div>
-          <img src={notificationIcon} alt="notif" className="w-8 h-8" onClick={() => navigate('/notifications')} />
+          <img
+            src={notificationIcon}
+            alt="notif"
+            className="w-8 h-8"
+            onClick={() => navigate("/notifications")}
+          />
         </div>
       </div>
       <div className="px-4 mt-6">
         <div className="font-semibold text-lg mb-1 mt-2">Change Password</div>
-        <div className="text-xs text-[#00000099] mb-4">Fill Informations To Change your Password</div>
+        <div className="text-xs text-[#00000099] mb-4">
+          Fill Informations To Change your Password
+        </div>
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
-            <label className="text-sm font-semibold text-[#222]">Current Password</label>
-            <button className="text-xs font-semibold text-[#D32F2F]" onClick={() => setShowOtpSent(true)}>Forget Password</button>
+            <label className="text-sm font-semibold text-[#222]">
+              Current Password
+            </label>
+            <button
+              className="text-xs font-semibold text-[#D32F2F]"
+              onClick={() => setShowOtpSent(true)}
+            >
+              Forget Password
+            </button>
           </div>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={lockIcon} alt="lock" className="w-5 h-5" />
             </span>
             <input
-              type={showCurrent ? 'text' : 'password'}
+              type={showCurrent ? "text" : "password"}
               className="rounded-lg border border-[#E0E0E0] pl-10 pr-10 py-2 bg-white w-full"
               placeholder="My Password"
               value={currentPassword}
-              onChange={e => setCurrentPassword(e.target.value)}
+              onChange={(e) => setCurrentPassword(e.target.value)}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => setShowCurrent(v => !v)}>
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+              onClick={() => setShowCurrent((v) => !v)}
+            >
               <img src={eyeIcon} alt="Show" className="w-5 h-5" />
             </span>
           </div>
         </div>
         <div className="mb-4">
-          <label className="text-sm font-semibold text-[#222] mb-1">New Password</label>
+          <label className="text-sm font-semibold text-[#222] mb-1">
+            New Password
+          </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={lockIcon} alt="lock" className="w-5 h-5" />
             </span>
             <input
-              type={showNew ? 'text' : 'password'}
+              type={showNew ? "text" : "password"}
               className="rounded-lg border border-[#E0E0E0] pl-10 pr-10 py-2 bg-white w-full"
               placeholder="My Password"
               value={newPassword}
-              onChange={e => setNewPassword(e.target.value)}
+              onChange={(e) => setNewPassword(e.target.value)}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => setShowNew(v => !v)}>
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+              onClick={() => setShowNew((v) => !v)}
+            >
               <img src={eyeIcon} alt="Show" className="w-5 h-5" />
             </span>
           </div>
         </div>
         <div className="mb-8">
-          <label className="text-sm font-semibold text-[#222] mb-1">Confirm New Password</label>
+          <label className="text-sm font-semibold text-[#222] mb-1">
+            Confirm New Password
+          </label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <img src={lockIcon} alt="lock" className="w-5 h-5" />
             </span>
             <input
-              type={showConfirm ? 'text' : 'password'}
+              type={showConfirm ? "text" : "password"}
               className="rounded-lg border border-[#E0E0E0] pl-10 pr-10 py-2 bg-white w-full"
               placeholder="My Password"
               value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" onClick={() => setShowConfirm(v => !v)}>
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
+              onClick={() => setShowConfirm((v) => !v)}
+            >
               <img src={eyeIcon} alt="Show" className="w-5 h-5" />
             </span>
           </div>
         </div>
         <button
           className="w-full py-3 rounded-xl text-white font-semibold text-lg bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] disabled:opacity-50"
-          disabled={!canSave}
+          disabled={!canSave || isChangingPassword}
+          onClick={handleUpdatePassword}
         >
-          Update Password
+          {isChangingPassword ? "Updating..." : "Update Password"}
         </button>
       </div>
       {showOtpSent && (
         <OtpSentModal
           email={user?.email ?? ""}
-          onVerify={() => { setShowOtpSent(false); setShowOtpInput(true); }}
+          onVerify={() => {
+            setShowOtpSent(false);
+            setShowOtpInput(true);
+          }}
         />
       )}
       {showOtpInput && (
         <OtpInputModal
-          onContinue={() => { setShowOtpInput(false); onBack(); }}
+          onContinue={() => {
+            setShowOtpInput(false);
+            onBack();
+          }}
         />
       )}
     </div>
   );
 };
 
-export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, forceWorkTab, user }) => {
-  const { isActive, activeTraining, steps, currentStep, complete } = useWalkthroughStore();
-  const [selectedTab, setSelectedTab] = useState<null | 'work' | 'personal' | 'security' | 'sign-out' | 'OrderHistory' | 'Personal'>(null);
+export const ProfileMobile: React.FC<ProfileMobileProps> = ({
+  forceSecurityTab,
+  forceWorkTab,
+  user,
+}) => {
+  const { isActive, activeTraining, steps, currentStep, complete } =
+    useWalkthroughStore();
+  const [selectedTab, setSelectedTab] = useState<
+    | null
+    | "work"
+    | "personal"
+    | "security"
+    | "sign-out"
+    | "OrderHistory"
+    | "Personal"
+  >(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (activeTraining !== 'profile') {
-      if (forceSecurityTab && selectedTab !== 'security') {
-        setSelectedTab('security');
-      } else if (forceWorkTab && selectedTab !== 'work') {
-        setSelectedTab('work');
+    if (activeTraining !== "profile") {
+      if (forceSecurityTab && selectedTab !== "security") {
+        setSelectedTab("security");
+      } else if (forceWorkTab && selectedTab !== "work") {
+        setSelectedTab("work");
       }
     }
   }, [forceSecurityTab, forceWorkTab, selectedTab, activeTraining]);
 
   useEffect(() => {
-    if (isActive && activeTraining === 'profile') {
-      if (steps[currentStep]?.selector === '.profile-work-tab' && selectedTab !== 'work') {
-        setSelectedTab('work');
-      } else if (steps[currentStep]?.selector === '.profile-personal-tab' && selectedTab !== 'personal') {
-        setSelectedTab('personal');
-      } else if (steps[currentStep]?.selector === '.profile-security-tab' && selectedTab !== 'security') {
-        setSelectedTab('security');
-      } else if (steps[currentStep]?.selector === '.profile-sign-out-tab' && selectedTab !== 'sign-out') {
-        setSelectedTab('sign-out');
+    if (isActive && activeTraining === "profile") {
+      if (
+        steps[currentStep]?.selector === ".profile-work-tab" &&
+        selectedTab !== "work"
+      ) {
+        setSelectedTab("work");
+      } else if (
+        steps[currentStep]?.selector === ".profile-personal-tab" &&
+        selectedTab !== "personal"
+      ) {
+        setSelectedTab("personal");
+      } else if (
+        steps[currentStep]?.selector === ".profile-security-tab" &&
+        selectedTab !== "security"
+      ) {
+        setSelectedTab("security");
+      } else if (
+        steps[currentStep]?.selector === ".profile-sign-out-tab" &&
+        selectedTab !== "sign-out"
+      ) {
+        setSelectedTab("sign-out");
       }
     }
     if (
       isActive &&
-      activeTraining === 'profile' &&
-      steps[currentStep]?.selector === '.profile-sign-out-tab'
+      activeTraining === "profile" &&
+      steps[currentStep]?.selector === ".profile-sign-out-tab"
     ) {
       setTimeout(() => {
         complete();
-        navigate('/training');
+        navigate("/training");
       }, 800);
     }
-  }, [isActive, activeTraining, steps, currentStep, complete, navigate, selectedTab]);
+  }, [
+    isActive,
+    activeTraining,
+    steps,
+    currentStep,
+    complete,
+    navigate,
+    selectedTab,
+  ]);
 
   const [showWorkSummary, setShowWorkSummary] = useState(false);
   const [showPersonalMobile, setShowPersonalMobile] = useState(false);
@@ -315,11 +517,18 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
   }
 
   if (showPersonalMobile) {
-    return <PersonalMobile onBack={() => setShowPersonalMobile(false)} user={user} />;
+    return (
+      <PersonalMobile onBack={() => setShowPersonalMobile(false)} user={user} />
+    );
   }
 
   if (showChangePassword) {
-    return <ChangePasswordMobile onBack={() => setShowChangePassword(false)} user={user} />;
+    return (
+      <ChangePasswordMobile
+        onBack={() => setShowChangePassword(false)}
+        user={user}
+      />
+    );
   }
 
   return (
@@ -370,14 +579,13 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
         <div className="flex w-full bg-[#F8EAEE] rounded-lg p-1">
           <button
             className={`flex-1 py-1 rounded-lg text-lg font-bold transition-all duration-200 ${
-              selectedTab === "OrderHistory"
-                ? "text-white"
-                : "text-[#0000004D]"
+              selectedTab === "OrderHistory" ? "text-white" : "text-[#0000004D]"
             }`}
             style={
               selectedTab === "OrderHistory"
                 ? {
-                    background: "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
+                    background:
+                      "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
                   }
                 : {}
             }
@@ -392,7 +600,8 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
             style={
               selectedTab === "Personal"
                 ? {
-                    background: "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
+                    background:
+                      "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)",
                   }
                 : {}
             }
@@ -405,7 +614,11 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
       <div className="mt-6 px-4">
         <div className="flex justify-between">
           <div className="font-semibold text-base text-[#000] mb-2">Info</div>
-          <img src={rightArrow} alt="rightArrow" onClick={() => setShowPersonalMobile(true)} />
+          <img
+            src={rightArrow}
+            alt="rightArrow"
+            onClick={() => setShowPersonalMobile(true)}
+          />
         </div>
         <div className="rounded-xl bg-[#F8EAEE] p-4 flex flex-col gap-6">
           <div className="flex items-center gap-6 text-[#6A1B9A]">
@@ -422,7 +635,10 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
             <img src={callIcon} alt="phone" className="w-5 h-5" />
             <span className="text-sm text-[#00000099]">{user?.phone}</span>
           </div>
-          <div className="flex items-center justify-between" onClick={() => setShowPersonalMobile(true)}>
+          <div
+            className="flex items-center justify-between"
+            onClick={() => setShowPersonalMobile(true)}
+          >
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img src={rolesIcon} alt="roles" className="w-5 h-5" />
               <span className="text-sm text-[#00000099]">
@@ -452,7 +668,10 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
       <div className="mt-6 px-4">
         <div className="font-semibold text-base mb-2">Account</div>
         <div className="flex flex-col rounded-lg bg-[#F8E6EF]">
-          <div className="rounded-xl p-4 flex items-center justify-between gap-6" onClick={() => setShowPersonalMobile(true)}>
+          <div
+            className="rounded-xl p-4 flex items-center justify-between gap-6"
+            onClick={() => setShowPersonalMobile(true)}
+          >
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img
                 src={personalDataIcon}
@@ -463,7 +682,10 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
             </div>
             <img src={rightArrow} alt="rightArrow" />
           </div>
-          <div className="rounded-xl p-4 flex items-center justify-between gap-6" onClick={() => setShowWorkSummary(true)}>
+          <div
+            className="rounded-xl p-4 flex items-center justify-between gap-6"
+            onClick={() => setShowWorkSummary(true)}
+          >
             <div className="flex items-center gap-6 text-[#6A1B9A]">
               <img
                 src={workSummaryIcon}
@@ -481,7 +703,10 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
           Settings
         </div>
         <div className="rounded-xl bg-[#F8E6EF] p-4 flex flex-col gap-6">
-          <div className="flex items-center gap-6" onClick={() => setShowChangePassword(true)}>
+          <div
+            className="flex items-center gap-6"
+            onClick={() => setShowChangePassword(true)}
+          >
             <img
               src={changePasswordIcon}
               alt="change password"
@@ -489,7 +714,10 @@ export const ProfileMobile: React.FC<ProfileMobileProps> = ({ forceSecurityTab, 
             />
             <span className="text-sm text-[#00000099]">Change Password</span>
           </div>
-          <div className="flex items-center gap-6" onClick={() => navigate('/notifications')}>
+          <div
+            className="flex items-center gap-6"
+            onClick={() => navigate("/notifications")}
+          >
             <img
               src={notificationIconFilled}
               alt="notifications"
