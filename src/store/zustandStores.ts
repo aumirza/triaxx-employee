@@ -162,6 +162,7 @@ interface CurrentOrder {
   floor: number;
   persons: number;
   items: OrderItem[];
+  customerId?: number;
 }
 
 interface OrderFlowStoreState {
@@ -173,6 +174,7 @@ interface OrderFlowStoreState {
     floor: number;
     persons: number;
     orderId?: string;
+    customerId?: number;
   }) => void;
   setPendingItem: (item: OrderItem) => void;
   clearPendingItem: () => void;
@@ -620,7 +622,7 @@ export const useOrderFlowStore = create<OrderFlowStoreState>((set) => ({
   currentOrder: null,
   pendingItem: null,
   pendingCustomizedItem: null,
-  startOrder: ({ tableId, floor, persons, orderId }) =>
+  startOrder: ({ tableId, floor, persons, orderId, customerId }) =>
     set((state) => {
       let items = state.currentOrder?.items || [];
       if (state.pendingCustomizedItem) {
@@ -633,6 +635,7 @@ export const useOrderFlowStore = create<OrderFlowStoreState>((set) => ({
           persons,
           items,
           ...(orderId ? { orderId } : {}),
+          ...(customerId ? { customerId } : {}),
         },
         pendingItem: null,
         pendingCustomizedItem: null,
