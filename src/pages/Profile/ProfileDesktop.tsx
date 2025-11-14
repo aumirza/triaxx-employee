@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import chefImg from "@/assets/chef.svg";
 import { useWalkthroughStore } from "@/store/walkthroughStore";
 import { useAuthStore } from "@/store/zustandStores";
+import { useChangePasswordMutation } from "@/redux/api/userApi";
 
 interface User {
   _id: string;
@@ -60,6 +61,14 @@ const ProfileDesktop: React.FC<ProfileDesktopProps> = ({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [reNewPassword, setReNewPassword] = useState("");
+
+  const [changePassword, { isLoading: isChangingPassword }] =
+    useChangePasswordMutation();
+  const passwordsMatch = newPassword === reNewPassword;
+  const canSave =
+    currentPassword.trim() !== "" &&
+    newPassword.trim() !== "" &&
+    passwordsMatch;
 
   useEffect(() => {
     if (location.state && location.state.tab) {
@@ -139,6 +148,29 @@ const ProfileDesktop: React.FC<ProfileDesktopProps> = ({
       logout();
       setSelectedTab(null);
     }, 2000);
+  };
+
+  const handleSavePassword = async () => {
+    if (!currentPassword || !newPassword || newPassword !== reNewPassword) {
+      return;
+    }
+
+    try {
+      const result = await changePassword({
+        currentPassword,
+        newPassword,
+      }).unwrap();
+
+      alert(result.message || "Password changed successfully!");
+
+      // Clear form
+      setCurrentPassword("");
+      setNewPassword("");
+      setReNewPassword("");
+    } catch (error: unknown) {
+      const err = error as { data?: { message?: string }; message?: string };
+      alert(err.data?.message || err.message || "Failed to change password");
+    }
   };
 
   return (
@@ -457,13 +489,17 @@ const ProfileDesktop: React.FC<ProfileDesktopProps> = ({
               </div>
             </div>
           </div>
+          {!passwordsMatch && (newPassword || reNewPassword) && (
+            <div className="text-sm text-red-600 mt-2">
+              Passwords do not match
+            </div>
+          )}
           <button
             className="w-full mt-8 py-3 rounded-xl text-white font-semibold text-lg bg-gradient-to-r from-[#6A1B9A] to-[#D32F2F] disabled:opacity-50"
-            disabled={
-              !(currentPassword && newPassword && newPassword === reNewPassword)
-            }
+            disabled={!canSave || isChangingPassword}
+            onClick={handleSavePassword}
           >
-            Save Password
+            {isChangingPassword ? "Saving..." : "Save Password"}
           </button>
         </div>
       )}
