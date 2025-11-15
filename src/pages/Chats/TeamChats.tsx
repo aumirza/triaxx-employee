@@ -4,9 +4,11 @@ import sendIcon from "@/assets/chats/sendIcon.svg";
 import mentionIcon from "@/assets/chats/mentionIcon.svg";
 import cameraIcon from "@/assets/chats/cameraIcon.svg";
 import customerServiceIcon from "@/assets/setting/customer-service.svg";
-import { useWalkthroughStore } from '@/store/walkthroughStore';
-import { settingsTrainingSteps } from '@/walkthrough/steps';
-import { useNavigate } from 'react-router-dom';
+import { useWalkthroughStore } from "@/store/walkthroughStore";
+import { settingsTrainingSteps } from "@/walkthrough/steps";
+import { useNavigate } from "react-router-dom";
+import { useFirebaseChat } from "@/hooks/useFirebaseChat";
+import FirebaseDebug from "@/components/common/FirebaseDebug";
 
 // Types
 interface User {
@@ -24,7 +26,7 @@ interface Group {
   avatar: string;
   memberIds: string[];
   type: "group";
-  lastMessage: {
+  lastMessage?: {
     text: string;
     time: string;
     senderId: string;
@@ -38,169 +40,29 @@ interface Message {
   text: string;
   timestamp: string;
   readBy: string[];
+  senderName?: string;
+  senderAvatar?: string;
 }
 type Chat = User | Group;
 
-// Dummy data (production-like schema)
-const users: User[] = [
-  {
-    id: "u1",
-    name: "Das",
-    role: "Manager",
-    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-    lastSeen: "2024-06-10T13:15:00Z",
-    type: "individual",
-  },
-  {
-    id: "u2",
-    name: "Mani",
-    role: "Cashier",
-    avatar: "https://randomuser.me/api/portraits/men/33.jpg",
-    lastSeen: "2024-06-10T13:10:00Z",
-    type: "individual",
-  },
-  {
-    id: "u3",
-    name: "Priya",
-    role: "Waiter",
-    avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-    lastSeen: "2024-06-10T13:00:00Z",
-    type: "individual",
-  },
-  {
-    id: "u4",
-    name: "Chef John",
-    role: "Chef",
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-    lastSeen: "2024-06-10T12:50:00Z",
-    type: "individual",
-  },
-  {
-    id: "u5",
-    name: "Chef John",
-    role: "Chef",
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-    lastSeen: "2024-06-10T12:50:00Z",
-    type: "individual",
-  },
-  {
-    id: "u6",
-    name: "Chef John",
-    role: "Chef",
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-    lastSeen: "2024-06-10T12:50:00Z",
-    type: "individual",
-  },
-];
-
-const groups: Group[] = [
-  {
-    id: "g1",
-    name: "Team Triaxx (Cashier)",
-    avatar: "https://randomuser.me/api/portraits/women/46.jpg",
-    memberIds: ["u1", "u2", "u3"],
-    type: "group",
-    lastMessage: {
-      text: "Manager online payment issue...",
-      time: "14:00",
-      senderId: "u1",
-      unread: true,
-    },
-  },
-  {
-    id: "g2",
-    name: "Team Triaxx (Waiters)",
-    avatar: "https://randomuser.me/api/portraits/men/47.jpg",
-    memberIds: ["u3"],
-    type: "group",
-    lastMessage: {
-      text: "Waiter online payment issue...",
-      time: "14:00",
-      senderId: "u3",
-      unread: false,
-    },
-  },
-];
-
-const messages: Message[] = [
-  // Group chat (g1)
-  {
-    id: "m1",
-    chatId: "g1",
-    senderId: "u2",
-    text: "Hi team 👋",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u1", "u3"],
-  },
-  {
-    id: "m2",
-    chatId: "g1",
-    senderId: "u2",
-    text: "Need help in the first floor !!!",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u1"],
-  },
-  {
-    id: "m3",
-    chatId: "g1",
-    senderId: "u1",
-    text: "I will come.",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u2", "u3"],
-  },
-  {
-    id: "m4",
-    chatId: "g1",
-    senderId: "u2",
-    text: "yeah okay",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u1", "u3"],
-  },
-  {
-    id: "m5",
-    chatId: "g1",
-    senderId: "u2",
-    text: "i will be waiting for team",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u1", "u3"],
-  },
-  // 1-1 chat (u1-u2)
-  {
-    id: "m6",
-    chatId: "u2",
-    senderId: "u1",
-    text: "Hi team 👋",
-    timestamp: "2024-06-10T11:31:00Z",
-    readBy: ["u2"],
-  },
-  {
-    id: "m7",
-    chatId: "u2",
-    senderId: "u2",
-    text: "See you all then!",
-    timestamp: "2024-06-10T11:32:00Z",
-    readBy: ["u1"],
-  },
-];
-
 const roles = ["All", "Waiters", "Chefs", "Managers"];
 
-// Utility to get user by id
-const getUser = (id: string): User | undefined =>
-  users.find((u) => u.id === id);
-// Utility to get group by id
-const getGroup = (id: string): Group | undefined =>
-  groups.find((g) => g.id === id);
-// Utility to get chat display name
-const getChatName = (chat: Chat) => chat.name || getUser(chat.id)?.name;
-// Utility to get chat avatar
-const getChatAvatar = (chat: Chat) => chat.avatar || getUser(chat.id)?.avatar;
-// Utility to get chat last message
-const getChatLastMessage = (chat: Chat) => {
-  if (chat.type === "group") return chat.lastMessage;
-  // For 1-1, get last message from messages
-  const chatMsgs = messages.filter((m) => m.chatId === chat.id);
+// Utility functions for chat data
+const getChatName = (chat: Chat) => chat.name;
+const getChatAvatar = (chat: Chat) => chat.avatar;
+const getChatLastMessage = (
+  chat: Chat,
+  currentUserId: string,
+  allMessages: Record<string, Message[]>
+) => {
+  if (chat.type === "group" && chat.lastMessage) {
+    return chat.lastMessage;
+  }
+
+  // Get last message from Firebase messages
+  const chatMsgs = allMessages[chat.id] || [];
   if (!chatMsgs.length) return null;
+
   const last = chatMsgs[chatMsgs.length - 1];
   return {
     text: last.text,
@@ -209,7 +71,7 @@ const getChatLastMessage = (chat: Chat) => {
       minute: "2-digit",
     }),
     senderId: last.senderId,
-    unread: !last.readBy.includes("u1"), // Assume u1 is current user
+    unread: !last.readBy.includes(currentUserId),
   };
 };
 
@@ -218,18 +80,18 @@ const ChatTile = ({
   chat,
   selected,
   onClick,
+  currentUserId,
+  allMessages,
+  unreadCount,
 }: {
   chat: Chat;
   selected: boolean;
   onClick: () => void;
+  currentUserId: string;
+  allMessages: Record<string, Message[]>;
+  unreadCount: number;
 }) => {
-  const lastMsg = getChatLastMessage(chat);
-  const unreadCount = messages.filter(
-    (m) =>
-      m.chatId === chat.id &&
-      Array.isArray(m.readBy) &&
-      !m.readBy.includes("u1")
-  ).length;
+  const lastMsg = getChatLastMessage(chat, currentUserId, allMessages);
 
   return (
     <div
@@ -239,19 +101,16 @@ const ChatTile = ({
       onClick={onClick}
     >
       <img
-        src={getChatAvatar(chat)}
+        src={getChatAvatar(chat) || "https://via.placeholder.com/48"}
         alt="avatar"
         className="w-12 h-12 rounded-full object-cover"
       />
       <div className="flex-1 min-w-0">
         <div className="font-semibold text-base truncate text-[#2C2C2E]">
-          {getChatName(chat)}
+          {getChatName(chat) || "Unknown"}
         </div>
-        <div
-          className={`truncate text-sm ${"font-normal text-[#666668]"
-          }`}
-        >
-          {lastMsg?.text || ""}
+        <div className="truncate text-sm font-normal text-[#666668]">
+          {lastMsg?.text || "No messages yet"}
         </div>
       </div>
       <div className="flex flex-col items-end min-w-[40px]">
@@ -261,7 +120,7 @@ const ChatTile = ({
           </div>
         )}
         <div className="text-xs text-[#BDBDBD] font-semibold">
-          {lastMsg?.time}
+          {lastMsg?.time || ""}
         </div>
       </div>
     </div>
@@ -272,17 +131,15 @@ const ChatTile = ({
 const MessageBubble = ({
   message,
   isSelf,
-  sender,
 }: {
   message: Message;
   isSelf: boolean;
-  sender: User;
 }) => (
   <div className={`flex ${isSelf ? "justify-end" : "justify-start"} mb-2`}>
-    {!isSelf && (
+    {!isSelf && message.senderAvatar && (
       <img
-        src={sender.avatar}
-        alt={sender.name}
+        src={message.senderAvatar}
+        alt={message.senderName || "User"}
         className="w-8 h-8 rounded-full mr-2"
       />
     )}
@@ -293,10 +150,9 @@ const MessageBubble = ({
           : "bg-[#F8EAEE] text-black"
       } px-4 py-2 rounded-xl relative`}
     >
-      {!isSelf && (
+      {!isSelf && message.senderName && (
         <div className="text-xs font-bold mb-1 text-[#6A1B9A]">
-          {sender.name}{" "}
-          <span className="text-[#BDBDBD] font-normal">{sender.role}</span>
+          {message.senderName}
         </div>
       )}
       <div className="text-base break-words">{message.text}</div>
@@ -336,6 +192,7 @@ const ChatWindow = ({
   isMobile,
   onBack,
   leftPanelRef,
+  onSendMessage,
 }: {
   chat: Chat;
   messages: Message[];
@@ -343,16 +200,25 @@ const ChatWindow = ({
   isMobile?: boolean;
   onBack?: () => void;
   leftPanelRef: React.RefObject<HTMLDivElement>;
+  onSendMessage: (text: string, files?: File[]) => Promise<void>;
 }) => {
-  const chatObj = chat.type === "group" ? getGroup(chat.id) : getUser(chat.id);
-  const chatMsgs = messages.filter((m) => m.chatId === chat.id);
+  const chatObj = chat; // Use chat directly since it's already the chat object
+  const chatMsgs = messages; // Messages are already filtered
   const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      // TODO: Implement send message
-      setMessage("");
+  const handleSendMessage = async () => {
+    if (message.trim() && !uploading) {
+      setUploading(true);
+      try {
+        await onSendMessage(message);
+        setMessage("");
+      } catch (error) {
+        console.error("Failed to send message:", error);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -363,11 +229,22 @@ const ChatWindow = ({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      // TODO: Implement file upload
-      console.log("Files to upload:", files);
+    if (files && files.length > 0 && !uploading) {
+      setUploading(true);
+      try {
+        const filesArray = Array.from(files);
+        await onSendMessage(message || "", filesArray);
+        setMessage("");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } catch (error) {
+        console.error("Failed to upload files:", error);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -390,8 +267,8 @@ const ChatWindow = ({
         left: btnRect.left - panelRect.left,
         zIndex: 50,
         width: 260,
-        maxHeight:400,
-        overflowY:"scroll"
+        maxHeight: 400,
+        overflowY: "scroll",
       });
     }
   }, [showMembers]);
@@ -413,33 +290,19 @@ const ChatWindow = ({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showMembers]);
 
-  // Helper for group member avatars
+  // Helper for group member avatars (simplified - showing count only)
   const renderGroupAvatars = (group: Group) => (
     <button
       ref={membersButtonRef}
-      className="flex -space-x-3 items-center relative z-10 focus:outline-none"
+      className="flex items-center gap-2 relative z-10 focus:outline-none"
       onClick={() => setShowMembers(true)}
       title="View Members"
       type="button"
     >
-      {group.memberIds.slice(0, 4).map((id: string) => {
-        const member = getUser(id);
-        if (!member) return null;
-        return (
-          <img
-            key={id}
-            src={member.avatar}
-            alt={member.name}
-            className="w-8 h-8 rounded-full border-2 border-white shadow -ml-2 first:ml-0"
-            style={{ zIndex: 10 - group.memberIds.indexOf(id) }}
-          />
-        );
-      })}
-      {group.memberIds.length > 4 && (
-        <span className="w-8 h-8 rounded-full bg-[#F8EAEE] flex items-center justify-center text-xs font-bold text-[#6A1B9A] border-2 border-white -ml-2">
-          +{group.memberIds.length - 4}
-        </span>
-      )}
+      <div className="w-8 h-8 rounded-full bg-gradient-to-b from-[#6A1B9A] to-[#D32F2F] flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow">
+        {group.memberIds.length}
+      </div>
+      <span className="text-xs text-[#666668]">members</span>
     </button>
   );
 
@@ -521,37 +384,22 @@ const ChatWindow = ({
             Team Members
           </div>
           <div className="flex flex-col gap-3 max-h-60 overflow-y-auto">
-            {(chatObj as Group).memberIds.map((id) => {
-              const member = getUser(id);
-              if (!member) return null;
-              // Use a placeholder for mobile number, or member.mobile if available
-              const mobile = member.mobile || "xxxxxxxxxx";
-              return (
-                <div
-                  key={id}
-                  className="flex items-center gap-3 justify-between w-full"
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={member.avatar}
-                      alt={member.name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <div>
-                      <div className="font-semibold text-base">
-                        {member.name}
-                      </div>
-                      <div className="text-xs text-[#BDBDBD]">
-                        {member.role}
-                      </div>
-                    </div>
+            {(chatObj as Group).memberIds.map((id) => (
+              <div
+                key={id}
+                className="flex items-center gap-3 justify-between w-full"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                    {id.substring(0, 2).toUpperCase()}
                   </div>
-                  <div className="text-xs text-[#222] font-semibold ml-2 whitespace-nowrap">
-                    {mobile}
+                  <div>
+                    <div className="font-semibold text-base">User {id}</div>
+                    <div className="text-xs text-[#BDBDBD]">Team Member</div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
       ) : null}
@@ -561,29 +409,21 @@ const ChatWindow = ({
       </div>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 bg-white min-h-0">
+        {uploading && (
+          <div className="text-center text-[#6A1B9A] py-2">
+            <span className="inline-block animate-pulse">Uploading...</span>
+          </div>
+        )}
         {chatMsgs.length === 0 ? (
           <div className="text-center text-[#222] mt-20">No messages yet.</div>
         ) : (
-          chatMsgs.map((msg) => {
-            const sender = getUser(msg.senderId) as User;
-            return (
-              <MessageBubble
-                key={msg.id}
-                message={msg}
-                isSelf={msg.senderId === currentUser.id}
-                sender={
-                  sender || {
-                    name: "Unknown",
-                    avatar: "",
-                    role: "",
-                    id: "",
-                    lastSeen: "",
-                    type: "individual",
-                  }
-                }
-              />
-            );
-          })
+          chatMsgs.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isSelf={msg.senderId === currentUser.id}
+            />
+          ))
         )}
       </div>
       {/* Input */}
@@ -621,8 +461,9 @@ const ChatWindow = ({
           <img src={mentionIcon} alt="@" className="w-6 h-6" />
         </button>
         <button
-          className="text-2xl text-[#6A1B9A] flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#F8EAEE] transition"
+          className="text-2xl text-[#6A1B9A] flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#F8EAEE] transition disabled:opacity-50"
           onClick={handleSendMessage}
+          disabled={uploading || !message.trim()}
           type="button"
         >
           <img src={sendIcon} alt="send" className="w-6 h-6" />
@@ -637,43 +478,164 @@ const TeamChats: React.FC = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const currentUser = users[0]; // Assume u1 is current user
+
+  // TODO: Replace with actual logged-in user from auth context
+  const currentUser: User = {
+    id: "current-user-id",
+    name: "Current User",
+    role: "Employee",
+    avatar: "https://via.placeholder.com/48",
+    lastSeen: new Date().toISOString(),
+    type: "individual",
+  };
+
   const isMobile = useIsMobile();
   const leftPanelRef = React.useRef<HTMLDivElement>(null!);
-  const { isActive, steps, currentStep, next, completed, activeTraining, completedTrainings, startTraining } = useWalkthroughStore();
+  const {
+    isActive,
+    steps,
+    currentStep,
+    next,
+    completed,
+    activeTraining,
+    completedTrainings,
+    startTraining,
+  } = useWalkthroughStore();
   const navigate = useNavigate();
+
+  // Firebase integration
+  const {
+    chats: firebaseChats,
+    messages: firebaseMessages,
+    loading: firebaseLoading,
+    error: firebaseError,
+    subscribeToChat,
+    sendMessage: sendFirebaseMessage,
+    markAsRead,
+    // getUnreadCountForChat, // Available for future use
+  } = useFirebaseChat(currentUser.id);
+
+  // Convert all Firebase messages to local format
+  const convertedAllMessages = useMemo(() => {
+    const converted: Record<string, Message[]> = {};
+
+    Object.keys(firebaseMessages).forEach((chatId) => {
+      converted[chatId] = firebaseMessages[chatId]
+        .filter((msg) => msg.timestamp) // Filter out messages with null timestamps
+        .map((msg) => ({
+          id: msg.id,
+          chatId: msg.chatId,
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+          senderAvatar: msg.senderAvatar,
+          text: msg.text,
+          timestamp:
+            msg.timestamp?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
+          readBy: msg.readBy,
+        })) as Message[];
+    });
+
+    return converted;
+  }, [firebaseMessages]);
+
+  // Convert Firebase messages to local format for selected chat
+  const convertedMessages = useMemo(() => {
+    if (!selectedChat || !convertedAllMessages[selectedChat.id]) {
+      return [];
+    }
+
+    return convertedAllMessages[selectedChat.id];
+  }, [selectedChat, convertedAllMessages]);
+
+  // Subscribe to selected chat messages
+  useEffect(() => {
+    if (selectedChat) {
+      const unsubscribe = subscribeToChat(selectedChat.id);
+      markAsRead(selectedChat.id);
+      return () => unsubscribe();
+    }
+  }, [selectedChat, subscribeToChat, markAsRead]);
+
+  // Use Firebase chats directly
+  const allChats = useMemo(() => {
+    return firebaseChats.map((fc) => {
+      if (fc.type === "group") {
+        return {
+          id: fc.id,
+          name: fc.name || "Unnamed Group",
+          avatar: fc.avatar || "https://via.placeholder.com/48",
+          memberIds: fc.memberIds,
+          type: "group" as const,
+          lastMessage:
+            fc.lastMessage && fc.lastMessage.timestamp
+              ? {
+                  text: fc.lastMessage.text,
+                  time: fc.lastMessage.timestamp?.toDate?.()
+                    ? new Date(
+                        fc.lastMessage.timestamp.toDate()
+                      ).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Now",
+                  senderId: fc.lastMessage.senderId,
+                  unread: !firebaseMessages[fc.id]?.every((msg) =>
+                    msg.readBy.includes(currentUser.id)
+                  ),
+                }
+              : undefined,
+        } as Group;
+      } else {
+        // For individual chats
+        const otherUserId = fc.memberIds.find((id) => id !== currentUser.id);
+        return {
+          id: fc.id,
+          name: fc.name || `User ${otherUserId}`,
+          role: "Team Member",
+          avatar: fc.avatar || "https://via.placeholder.com/48",
+          lastSeen: new Date().toISOString(),
+          type: "individual" as const,
+        } as User;
+      }
+    });
+  }, [firebaseChats, firebaseMessages, currentUser.id]);
 
   // Filter chats by tab and search
   const chatList = useMemo(() => {
-    let chats: Chat[] = [
-      ...groups,
-      ...users.filter((u) => u.id !== currentUser.id),
-    ];
+    let chats = allChats;
+
+    // Filter by role/tab
     if (activeTab !== "All") {
-      chats = chats.filter((c) => {
-        if (c.type === "group") {
-          return c.memberIds.some(
-            (id) => getUser(id)?.role === activeTab.slice(0, -1)
-          );
-        }
-        return c.role === activeTab.slice(0, -1);
-      });
+      // For now, don't filter by role since we don't have role data from Firebase
+      // This can be enhanced when user data is properly integrated
+      // chats = chats (keeping all chats for now)
     }
+
+    // Filter by search
     if (search) {
       chats = chats.filter((c) => {
         const chatName = getChatName(c);
         const searchLower = search.toLowerCase();
-        if (chatName && chatName.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        if ("role" in c && typeof c.role === "string") {
-          return c.role.toLowerCase().includes(searchLower);
-        }
-        return false;
+        return chatName && chatName.toLowerCase().includes(searchLower);
       });
     }
+
     return chats;
-  }, [activeTab, search]);
+  }, [activeTab, search, allChats]);
+
+  // Calculate unread counts for each chat
+  const unreadCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    Object.entries(firebaseMessages).forEach(([chatId, messages]) => {
+      counts[chatId] = messages.filter(
+        (msg) =>
+          msg.senderId !== currentUser.id &&
+          !msg.readBy.includes(currentUser.id)
+      ).length;
+    });
+    return counts;
+  }, [firebaseMessages, currentUser.id]);
 
   // When tab changes, clear selected chat
   const handleTabClick = (role: string) => {
@@ -685,16 +647,19 @@ const TeamChats: React.FC = () => {
   React.useEffect(() => {
     if (
       completed &&
-      activeTraining === 'teamchat' &&
+      activeTraining === "teamchat" &&
       !completedTrainings.settings
     ) {
-      startTraining('settings', settingsTrainingSteps);
-      navigate('/');
+      startTraining("settings", settingsTrainingSteps);
+      navigate("/");
     }
   }, [completed, activeTraining, completedTrainings, startTraining, navigate]);
 
   return (
-    <div className="p-0 md:p-6 flex flex-col h-screen overflow-hidden">
+    <div className="p-0 md:p-6 flex flex-col h-screen overflow-hidden relative">
+      {/* Firebase Debug Component (Development Only) */}
+      {import.meta.env.DEV && <FirebaseDebug currentUserId={currentUser.id} />}
+
       {/* Desktop Title */}
       <div className="text-3xl font-bold mb-4 md:mb-6 px-4 md:px-0 hidden md:block">
         Chats
@@ -749,26 +714,57 @@ const TeamChats: React.FC = () => {
           </div>
           {/* Chat List */}
           <div className="flex-1 overflow-y-auto min-h-0 h-full flex flex-col px-2 md:px-0">
-            {chatList.map((chat) => (
-              <ChatTile
-                key={chat.id}
-                chat={chat}
-                selected={!!selectedChat && selectedChat.id === chat.id}
-                onClick={() => {
-                  setSelectedChat(chat);
-                  // Advance walkthrough if on the left panel step
-                  const step = steps[currentStep];
-                  if (isActive && step && step.selector === '.team-chat-left-panel') {
-                    next();
-                  }
-                }}
-              />
-            ))}
+            {firebaseLoading ? (
+              <div className="text-center text-[#666668] mt-10">
+                <p className="text-lg font-semibold mb-2">Loading chats...</p>
+              </div>
+            ) : firebaseError ? (
+              <div className="text-center text-red-500 mt-10">
+                <p className="text-lg font-semibold mb-2">
+                  Error loading chats
+                </p>
+                <p className="text-sm">{firebaseError}</p>
+              </div>
+            ) : chatList.length === 0 ? (
+              <div className="text-center text-[#666668] mt-10">
+                <p className="text-lg font-semibold mb-2">No chats yet</p>
+                <p className="text-sm">
+                  {firebaseChats.length === 0
+                    ? "No chats found. Create a chat to get started."
+                    : "No chats match your search."}
+                </p>
+              </div>
+            ) : (
+              chatList.map((chat) => (
+                <ChatTile
+                  key={chat.id}
+                  chat={chat}
+                  selected={!!selectedChat && selectedChat.id === chat.id}
+                  currentUserId={currentUser.id}
+                  allMessages={convertedAllMessages}
+                  unreadCount={unreadCounts[chat.id] || 0}
+                  onClick={() => {
+                    setSelectedChat(chat);
+                    // Advance walkthrough if on the left panel step
+                    const step = steps[currentStep];
+                    if (
+                      isActive &&
+                      step &&
+                      step.selector === ".team-chat-left-panel"
+                    ) {
+                      next();
+                    }
+                  }}
+                />
+              ))
+            )}
           </div>
         </div>
         {/* Right: Chat Window */}
         <div
-          className={`flex-1 flex flex-col min-h-0 w-full${isMobile && !selectedChat ? ' hidden' : ''}`}
+          className={`flex-1 flex flex-col min-h-0 w-full${
+            isMobile && !selectedChat ? " hidden" : ""
+          }`}
         >
           {!selectedChat ? (
             <div className="flex items-center justify-center h-full text-center text-lg text-[#2C2C2E] bg-transparent">
@@ -781,11 +777,20 @@ const TeamChats: React.FC = () => {
           ) : (
             <ChatWindow
               chat={selectedChat}
-              messages={messages}
+              messages={convertedMessages}
               currentUser={currentUser}
               isMobile={isMobile}
               onBack={() => setSelectedChat(null)}
               leftPanelRef={leftPanelRef}
+              onSendMessage={async (text: string, files?: File[]) => {
+                await sendFirebaseMessage(
+                  selectedChat.id,
+                  text,
+                  currentUser.name,
+                  currentUser.avatar,
+                  files
+                );
+              }}
             />
           )}
         </div>
