@@ -180,6 +180,7 @@ background: linear-gradient(180deg, rgba(106, 27, 154, 0.1) 0%, rgba(211, 47, 47
   max-width: 320px;
   text-align: left;
   position: relative;
+  z-index: 11002; /* Ensure popover shows above modals when necessary */
 }
 
 /* Base styles for the arrow element. We do NOT set left/top/right/bottom here. */
