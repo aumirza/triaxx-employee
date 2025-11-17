@@ -28,6 +28,7 @@ import {
   fetchSupportTickets,
   type SupportTicket,
 } from "@/api/supportApi";
+import { useWalkthroughStore } from "@/store/walkthroughStore";
 
 interface WorkDetails {
   onboardingDate: string;
@@ -649,6 +650,15 @@ export const useOrderFlowStore = create<OrderFlowStoreState>((set) => ({
     set(() => ({ pendingCustomizedItem: null })),
   addItemToOrder: (item) =>
     set((state) => {
+      console.log("[OrderFlowStore] addItemToOrder called with:", item);
+      const walkthroughActive = useWalkthroughStore.getState().isActive;
+      const isConfirmed = (item as any)?.confirmed === true;
+      if (walkthroughActive && !isConfirmed) {
+        console.log(
+          "[OrderFlowStore] Ignoring addItemToOrder during walkthrough until confirmed"
+        );
+        return {};
+      }
       if (!state.currentOrder) return {};
       return {
         currentOrder: {
