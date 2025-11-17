@@ -15,7 +15,7 @@ const driverObj = driver({
   disableActiveInteraction: false,
 });
 
-export const WalkthroughControllerNew: React.FC = () => {
+export const WalkthroughController: React.FC = () => {
   const { steps, currentStep, isActive, trainingInstanceId } =
     useWalkthroughStore();
   const location = useLocation();
@@ -190,4 +190,4 @@ export const WalkthroughControllerNew: React.FC = () => {
   return null;
 };
 
-export default WalkthroughControllerNew;
+export default WalkthroughController;
