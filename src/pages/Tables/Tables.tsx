@@ -97,7 +97,7 @@ const TableCard = ({
   return (
     <div
       className={`flex flex-col items-center justify-center cursor-pointer mx-2 my-2  relative min-w-fit${
-        status === "Available" ? " table-available" : ""
+        status === "Available" || status === "Empty" ? " table-available" : ""
       }`}
       onClick={onClick}
     >
@@ -228,7 +228,9 @@ const TablePage: React.FC = () => {
     // If in order flow and clicking available table, start order and navigate
     if (
       isInOrderFlow &&
-      (tableStatus === "Empty" || tableStatus === undefined)
+      (tableStatus === "Empty" ||
+        tableStatus === undefined ||
+        tableStatus === "Available")
     ) {
       console.log(
         "[Walkthrough Debug] In order flow, starting order for table:",
