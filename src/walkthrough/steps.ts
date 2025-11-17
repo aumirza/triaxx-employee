@@ -11,7 +11,6 @@ export const trainingSteps: WalkthroughStep[] = [
     stageRadius: 8,
     stagePadding: 0,
     advanceOn: "ui",
-
   },
   // "All items of bar & restaurant are here!"
   {
@@ -22,20 +21,20 @@ export const trainingSteps: WalkthroughStep[] = [
     align: "start",
     stageRadius: 8,
     stagePadding: 0,
-    advanceOn: 'both',
-    setCategory: 'all',
+    advanceOn: "both",
+    setCategory: "all",
   },
-  {
-    selector: ".burgers-tab",
-    content: "Only Main Courses are listed here",
-    page: "/orders",
-    placement: "bottom",
-    align: "start",
-    stageRadius: 8,
-    stagePadding: 0,
-    advanceOn: 'both',
-    setCategory: 'Burger',
-  },
+  // {
+  //   selector: ".burgers-tab",
+  //   content: "Only Main Courses are listed here",
+  //   page: "/orders",
+  //   placement: "bottom",
+  //   align: "start",
+  //   stageRadius: 8,
+  //   stagePadding: 0,
+  //   advanceOn: "both",
+  //   setCategory: "Burger",
+  // },
 
   // {
   //   selector: ".crispy-tab",
@@ -48,131 +47,240 @@ export const trainingSteps: WalkthroughStep[] = [
   //   advanceOn: 'both',
   //   setCategory: 'Crispy',
   // },
-  {
-    selector: ".nuggets-tab",
-    content: "All Nuggets are listed here",
-    page: "/orders",
-    placement: "bottom",
-    align: "start",
-    stageRadius: 8,
-    stagePadding: 0,
-    advanceOn: 'both',
-    setCategory: 'Nugget',
-  },
-  {
-    selector: ".beverages-tab",
-    content: "All Beverages are listed here",
-    page: "/orders",
-    placement: "bottom",
-    align: "start",
-    stageRadius: 8,
-    stagePadding: 0,
-    advanceOn: 'both',
-    setCategory: 'Beverage',
-  },
+  // {
+  //   selector: ".nuggets-tab",
+  //   content: "All Nuggets are listed here",
+  //   page: "/orders",
+  //   placement: "bottom",
+  //   align: "start",
+  //   stageRadius: 8,
+  //   stagePadding: 0,
+  //   advanceOn: 'both',
+  //   setCategory: 'Nugget',
+  // },
+  // {
+  //   selector: ".beverages-tab",
+  //   content: "All Beverages are listed here",
+  //   page: "/orders",
+  //   placement: "bottom",
+  //   align: "start",
+  //   stageRadius: 8,
+  //   stagePadding: 0,
+  //   advanceOn: 'both',
+  //   setCategory: 'Beverage',
+  // },
   // "Tap to Select Table & Start Order"
   {
     selector: ".select-table-prompt",
     content: "Tap to Select Table & Start Order",
     page: "/orders",
     placement: "top",
-    advanceOn: "both"
+    advanceOn: "both",
   },
   {
     selector: ".person-floor-panel",
     content: "Select number of people & the floor",
     page: "/orders",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".table-available",
     content: "Select the table based on the availability!",
     page: "/table",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".order-item-first",
     content: "Select an item from Customers choice",
     page: "/orders",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
-    selector: ".order-item-second",
-    content: "Add more items by selecting the customers choice",
+    selector: ".item-details-modal",
+    content:
+      "This dialog lets you customize the item — choose size and addons here.",
     page: "/orders",
-    placement: "bottom",
-    advanceOn: "ui"
+    placement: "top",
+    advanceOn: "description",
   },
   {
-    selector: ".order-item-third",
-    content: "Add more items by selecting the customers choice",
+    selector: ".item-details-modal .item-size-options",
+    content: "Select the item size according to customer's preference",
     page: "/orders",
-    placement: "bottom",
-    advanceOn: "ui"
+    placement: "top",
+    advanceOn: "ui",
   },
   {
-    selector: ".order-summary-panel",// this is the order summary panel in right side of the screen
+    selector: ".item-details-modal .item-size-add-btn",
+    content: "Confirm the size selection by clicking Add Item",
+    page: "/orders",
+    placement: "top",
+    advanceOn: "ui",
+  },
+  {
+    selector: ".addons-modal",
+    content: "If customer wants addons, choose them here",
+    page: "/orders",
+    placement: "top",
+    advanceOn: "ui",
+  },
+  {
+    selector: ".addons-save-btn",
+    content: "Click Save to add selected addons to the item",
+    page: "/orders",
+    placement: "top",
+    advanceOn: "ui",
+  },
+  // {
+  //   selector: ".order-item-second",
+  //   content: "Add more items by selecting the customers choice",
+  //   page: "/orders",
+  //   placement: "bottom",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".item-details-modal .item-size-options",
+  //   content: "Select the item size according to customer's preference",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".item-details-modal .item-size-add-btn",
+  //   content: "Confirm the size selection by clicking Add Item",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".addons-modal",
+  //   content: "If customer wants addons, choose them here",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".addons-save-btn",
+  //   content: "Click Save to add selected addons to the item",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".order-item-third",
+  //   content: "Add more items by selecting the customers choice",
+  //   page: "/orders",
+  //   placement: "bottom",
+  //   advanceOn: "ui",
+  // },
+  // // Size selection shown after selecting an item with variants/sizes
+  // {
+  //   selector: ".item-details-modal .item-size-options",
+  //   content: "Select the item size according to customer's preference",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".item-details-modal .item-size-add-btn",
+  //   content: "Confirm the size selection by clicking Add Item",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // // Addon selection shown after size selection
+  // {
+  //   selector: ".addons-modal",
+  //   content: "If customer wants addons, choose them here",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  // {
+  //   selector: ".addons-save-btn",
+  //   content: "Click Save to add selected addons to the item",
+  //   page: "/orders",
+  //   placement: "top",
+  //   advanceOn: "ui",
+  // },
+  {
+    selector: ".order-summary-panel", // this is the order summary panel in right side of the screen
     content: "Check the Order Summary, add items on customer wish",
     page: "/orders",
     placement: "left",
-    advanceOn: "description"
+    advanceOn: "description",
+  },
+  {
+    selector: ".customer-modal",
+    content:
+      "If you don’t have the customer yet, add a customer to complete the order",
+    page: "/orders",
+    placement: "top",
+    advanceOn: "ui",
+  },
+  {
+    selector: ".create-customer-btn",
+    content: "Click to create the customer and continue with the order",
+    page: "/orders",
+    placement: "bottom",
+    advanceOn: "ui",
   },
   {
     selector: ".select-payment-btn",
     content: "Click here to initiate Payment",
     page: "/orders",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".order-summary-modal", // this is the order summary modal open in the center of the screen when the payment is initiated
     content: "choose payment option",
     page: "/orders",
     placement: "bottom",
-    advanceOn: "description"
+    advanceOn: "description",
   },
   {
     selector: ".choose-payment-btn",
     content: "Select the Payment Method",
     page: "/orders",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".ready-to-scan-modal",
     content: "Display this scanner & Wait until they Pay",
     page: "/orders",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".ready-to-pay-modal",
     content: "Display the Machine & Wait until they Pay",
     page: "/orders",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".payment-done-modal",
     content: "Acknowledgement once payment done",
     page: "/orders",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".order-sent-panel",
     content: "Order Created & Start new order",
     page: "/orders",
     placement: "top",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
-
 ];
 
-export const tableTrainingSteps: WalkthroughStep[] = [  {
+export const tableTrainingSteps: WalkthroughStep[] = [
+  {
     selector: ".table-btn",
     content: "click to Manage Tables and Reservations !",
     page: "/",
@@ -182,34 +290,34 @@ export const tableTrainingSteps: WalkthroughStep[] = [  {
     stagePadding: 0,
     advanceOn: "ui",
   },
-    
+
   {
     selector: ".table-tab-all",
     content: "All the Tables of your Restaurant are listed here",
     page: "/table",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".table-tab-served",
     content: "All the Tables which were served are listed here",
     page: "/table",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".table-tab-waiting",
     content: "All the Tables which are waiting are listed here",
     page: "/table",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
   {
     selector: ".table-tab-reserved",
     content: "All the Tables which are Reserved are listed here",
     page: "/table",
     placement: "bottom",
-    advanceOn: "ui"
+    advanceOn: "ui",
   },
 ];
 
@@ -286,7 +394,7 @@ export const teamChatTrainingSteps: WalkthroughStep[] = [
     page: "/team-chats",
     placement: "bottom",
     advanceOn: "ui",
-    onAdvance: "autoCloseAndNavigateHome"
+    onAdvance: "autoCloseAndNavigateHome",
   },
 ];
 
@@ -392,7 +500,7 @@ export const profileTrainingSteps: WalkthroughStep[] = [
     placement: "right",
     advanceOn: "description",
   },
- 
+
   {
     selector: ".profile-work-tab",
     content: "Click here to check your work summary.",
@@ -400,26 +508,25 @@ export const profileTrainingSteps: WalkthroughStep[] = [
     placement: "top",
     advanceOn: "description",
   },
-   {
+  {
     selector: ".profile-personal-tab",
     content: "Click to check Your Personal details !",
     page: "/profile",
     placement: "top",
     advanceOn: "description",
   },
-    {
+  {
     selector: ".profile-security-tab",
     content: " Click to check Your Login Info !",
     page: "/profile",
     placement: "top",
     advanceOn: "description",
   },
-    {
+  {
     selector: ".profile-sign-out-tab",
     content: "Click here to Sign out !",
     page: "/profile",
     placement: "top",
     advanceOn: "description",
   },
- 
 ];
