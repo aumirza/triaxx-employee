@@ -29,7 +29,7 @@ const LoginPage: React.FC = () => {
     event.preventDefault();
     setIsLoading(true);
     try {
-      const result = await login({ email: employeeId, password }).unwrap();
+      await login({ email: employeeId, password }).unwrap();
 
       toast.success("Login successful!", {
         duration: 4000,
