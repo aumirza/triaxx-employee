@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useSupportTicketStore } from "@/store/zustandStores";
-import { useUserStore } from "@/store/zustandStores";
 import { useNavigate } from "react-router-dom";
 import uploadImage from "@/assets/setting/upload.svg";
 import {
@@ -23,8 +22,8 @@ const CreateSupportTicket: React.FC = () => {
     fetchTicketId,
   } = useSupportTicketStore();
   const navigate = useNavigate();
-  const user = useUserStore((s) => s.user);
-  const userLoading = useUserStore((s) => s.loading);
+  const user = useSelector((s: RootState) => s.auth.user);
+  const userLoading = false; // Redux doesn't have a dedicated loading flag for auth here
   const customerId = useSelector((s: RootState) => s.auth.user?.user_id) as
     | number
     | undefined;
@@ -53,7 +52,7 @@ const CreateSupportTicket: React.FC = () => {
       setField("email", user.email);
     }
     if (user && (businessName === undefined || businessName === null)) {
-      setField("businessName", user.name);
+      setField("businessName", user.Name);
     }
   }, [user, email, businessName, setField]);
 
