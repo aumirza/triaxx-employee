@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginMutation } from "@/redux/api/apiSlice";
-import { useDispatch } from "react-redux";
-import { setCredentials } from "@/redux/slice/authSlice";
 import toast, { Toaster } from "react-hot-toast";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import LeftPanel from "@/components/common/LeftPanel";
@@ -24,7 +22,6 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [login] = useLoginMutation();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 1023px)");
 
@@ -33,12 +30,7 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
     try {
       const result = await login({ email: employeeId, password }).unwrap();
-      dispatch(
-        setCredentials({
-          token: result.data.token,
-          user: result.data.user,
-        })
-      );
+
       toast.success("Login successful!", {
         duration: 4000,
         position: "top-right",
@@ -64,7 +56,7 @@ const LoginPage: React.FC = () => {
         duration: 4000,
         position: "top-right",
       });
-    } catch (err: any) {
+    } catch {
       toast.error(`An error occurred during ${provider} login.`, {
         duration: 4000,
         position: "top-right",
