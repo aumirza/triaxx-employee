@@ -8,7 +8,7 @@ import SignOutSuccessModal from "../common/SignOutSuccessModal";
 import Header from "./Header";
 import MobileLogoutConfirmation from "../common/MobileLogoutConfirmation";
 import MobileLogoutSuccess from "../common/MobileLogoutSuccess";
-import { useAuthStore } from "@/store/zustandStores";
+import { logoutAll } from "@/services/authHelpers";
 
 const mobileRoutes = [
   "/orders",
@@ -29,7 +29,9 @@ const AppLayout: React.FC = () => {
   // Mobile modal states
   const [isMobileConfirmOpen, setMobileConfirmOpen] = useState(false);
   const [isMobileSuccessOpen, setMobileSuccessOpen] = useState(false);
-  const { logout } = useAuthStore();
+  const logout = () => {
+    logoutAll();
+  };
 
   useEffect(() => {
     // If on mobile and current route is not a valid mobile route, redirect to /orders
