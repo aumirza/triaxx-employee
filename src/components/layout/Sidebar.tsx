@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useWalkthroughStore } from "@/store/walkthroughStore";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/redux/store";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/redux/store";
 import { logout } from "@/redux/slice/authSlice";
 import toast from "react-hot-toast";
 
@@ -60,6 +62,35 @@ const Sidebar: React.FC<SidebarProps> = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  // Safe getters to avoid casting to `any` and keep strict typing
+  const getField = (key: string): string | undefined =>
+    user
+      ? ((user as unknown as Record<string, unknown>)[key] as
+          | string
+          | undefined)
+      : undefined;
+  const displayName = (() => {
+    if (!user) return "Jackline";
+    const n = getField("Name") || getField("name");
+    return n || "Jackline";
+  })();
+  const displayRole = (() => {
+    if (!user) return "Staff";
+    const u = user as unknown as Record<string, unknown>;
+    const roleObj = u["Role_id"] as Record<string, unknown> | undefined;
+    if (roleObj && typeof roleObj["role_name"] === "string") {
+      return roleObj["role_name"] as string;
+    }
+    return (u["role"] as string) || "Staff";
+  })();
+  const imageSrc = (() => {
+    if (!user) return UserIcon;
+    const u = user as unknown as Record<string, unknown>;
+    const img = u["user_image"] as string | undefined;
+    return img || UserIcon;
+  })();
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   const handleLogout = () => {
@@ -94,10 +125,18 @@ const Sidebar: React.FC<SidebarProps> = () => {
       </div>
       {/* User */}
       <div className="flex gap-2 items-center bg-[linear-gradient(180deg,rgba(106,27,154,0.1)_0%,rgba(211,47,47,0.1)_100%)] rounded-full px-4 py-2 mb-8">
-        <img src={UserIcon} alt="User" className="h-8 w-8 mr-3" />
+        <img
+          src={imageSrc}
+          alt={displayName}
+          className="h-8 w-8 mr-3 rounded-full object-cover"
+        />
         <div className="flex flex-col text-left">
-          <span className="text-sm font-semibold leading-tight">Jackline</span>
-          <span className="text-xs text-[#7c7c7c] leading-tight">Staff</span>
+          <span className="text-sm font-semibold leading-tight">
+            {displayName}
+          </span>
+          <span className="text-xs text-[#7c7c7c] leading-tight">
+            {displayRole}
+          </span>
         </div>
       </div>
       {/* Main nav */}
