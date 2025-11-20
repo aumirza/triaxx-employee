@@ -1,146 +1,133 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/redux/store";
-import clockIcon from "@/assets/profile/clock_icon2.svg";
 import rolesIcon from "@/assets/profile/user_icon_light.svg";
 import orderServedIcon from "@/assets/profile/total_earninig.svg";
+import WeeklyChart from "@/components/common/WeeklyChart";
+import TodayProgress from "@/components/common/TodayProgress";
+import Skeleton from "@/components/common/Skeleton";
+// no local states: use RTK Query hooks instead
 import { useNavigate } from "react-router-dom";
 import backIcon from "@/assets/back.svg";
 import notificationIcon from "@/assets/profile/notification_light.svg";
-import { useStore } from "@/store/zustandStores";
+import { useGetEmployeeWeeklyOrdersQuery } from "@/redux/api/employeeApi";
 
 interface WorkSummaryProps {
   layout: "desktop" | "mobile";
 }
 
-// Helper for circular progress
-const CircularProgress = ({
-  percent,
-  workedTime,
-}: {
-  percent: number;
-  workedTime: string;
-}) => {
-  const radius = 80;
-  const stroke = 14;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const offset = circumference - (percent / 100) * circumference;
-
-  return (
-    <div className="relative flex flex-col items-center justify-center w-[200px] h-[200px] mx-auto">
-      <svg width={radius * 2} height={radius * 2}>
-        <defs>
-          <linearGradient id="circleGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#6A1B9A" />
-            <stop offset="100%" stopColor="#D32F2F" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={radius}
-          cy={radius}
-          r={normalizedRadius}
-          fill="none"
-          stroke="#E5D0F6"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={radius}
-          cy={radius}
-          r={normalizedRadius}
-          fill="none"
-          stroke="url(#circleGradient)"
-          strokeWidth={stroke}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.5s" }}
-        />
-      </svg>
-      <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-[#000] mb-1">{workedTime}</span>
-        <span className="text-base font-semibold text-[#000]">Work Time</span>
-      </div>
-    </div>
-  );
-};
-
-// Helper for bar chart
-const WeeklyBarChart = ({
-  data,
-}: {
-  data: { [day: string]: { orders: number } };
-}) => {
-  // Map to S M T W T F S order
-  const days = ["S", "M", "T", "W", "T2", "F", "S2"];
-  const dayLabels = ["S", "M", "T", "W", "T", "F", "S"];
-  const maxOrders = Math.max(...Object.values(data).map((d) => d.orders));
-  return (
-    <div className="flex items-end justify-between w-full h-40 px-2">
-      {days.map((day, idx) => {
-        const isLast = idx === 6;
-        const barHeight = ((data[day]?.orders || 0) / maxOrders) * 110 + 30; // min height for visual
-        return (
-          <div key={day} className="flex flex-col items-center w-8">
-            <div
-              className="w-3.5"
-              style={{
-                height: `${barHeight}px`,
-                borderRadius: "16px",
-                background: isLast
-                  ? "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)"
-                  : "#00000099",
-                boxShadow: isLast ? "0 2px 8px #6A1B9A33" : undefined,
-                marginBottom: 8,
-              }}
-            ></div>
-            <div
-              className="w-3 h-3 rounded-full mb-1"
-              style={{
-                background: isLast
-                  ? "linear-gradient(180deg, #6A1B9A 0%, #D32F2F 100%)"
-                  : "#00000099",
-              }}
-            ></div>
-            <span
-              className="text-xs text-[#000] font-semibold mt-1"
-              style={{ opacity: 0.7 }}
-            >
-              {dayLabels[idx]}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+// Today's progress extracted into `src/components/common/TodayProgress.tsx`
 
 const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
   const user = useSelector((state: RootState) => state.auth.user);
-  // Keep workSummary as zustand-local state for now
-  const workSummary = useStore((state) => state.workSummary);
-  const fetchWorkSummary = useStore((state) => state.fetchWorkSummary);
   const navigate = useNavigate();
+  // Use RTK Query weekly summary for chart + progress
+  const { data: weeklyResp, isLoading: loadingWeekly } =
+    useGetEmployeeWeeklyOrdersQuery(user?.Employee_id || "current", {
+      skip: !user?.Employee_id,
+    });
 
-  // Calculate percent for circular progress (dynamic)
-  function getPercent(worked: string, remaining: string) {
-    // worked/remaining format: '05:45 hrs', '03:00 hrs'
-    const [wh, wm] = worked.split(" ")[0].split(":").map(Number);
-    const [rh, rm] = remaining.split(" ")[0].split(":").map(Number);
-    const workedMinutes = wh * 60 + wm;
-    const remainingMinutes = rh * 60 + rm;
-    const total = workedMinutes + remainingMinutes;
-    return total === 0 ? 0 : Math.round((workedMinutes / total) * 100);
-  }
+  const apiChart = weeklyResp?.chart ?? undefined;
+  const apiSummary = weeklyResp?.summary ?? undefined;
+  // weeklyResp may not contain some properties like growthPercent or totalTips
+  const growthPercent =
+    (weeklyResp as { growthPercent?: number })?.growthPercent ?? 0;
+  const totalTips = (weeklyResp as { totalTips?: number })?.totalTips ?? 0;
 
-  useEffect(() => {
-    if (!workSummary) {
-      fetchWorkSummary();
-    }
-  }, [workSummary, fetchWorkSummary, user?.Employee_id, user]);
+  // No manual fetch/useEffect anymore — RTK Query handles data fetching, caching and re-fetching
 
-  if (!workSummary) {
-    return <div className="text-center py-10">Loading work summary...</div>;
+  const formatHours = (h: number) => {
+    if (!h) return "00:00 hrs";
+    const hours = Math.floor(h);
+    const minutes = Math.round((h - hours) * 60);
+    const mm = String(minutes).padStart(2, "0");
+    const hh = String(hours).padStart(2, "0");
+    return `${hh}:${mm} hrs`;
+  };
+
+  if (loadingWeekly) {
+    // Render a skeleton layout similar to final layout for better UX
+    const containerClass =
+      layout === "desktop"
+        ? "grid grid-cols-3 gap-6"
+        : "flex flex-col gap-6 p-4";
+    return (
+      <div className="pt-0">
+        <div className={containerClass}>
+          {/* Today Progress Skeleton */}
+          <div className="rounded-2xl p-6 flex flex-col items-center min-w-[260px] min-h-[260px] relative bg-[linear-gradient(180deg,rgba(106,27,154,0.03)_0%,rgba(211,47,47,0.03)_100%)]">
+            <div className="mb-2 font-bold text-lg text-black">
+              <Skeleton width="w-40" height="h-6" />
+            </div>
+            <div className="flex items-center justify-center w-full h-full">
+              <div className="w-[140px] h-[140px] rounded-full bg-gray-200 animate-pulse" />
+            </div>
+            <div className="flex items-center gap-1 mt-2 text-base font-medium">
+              <Skeleton width="w-20" height="h-4" />
+            </div>
+          </div>
+          {/* Weekly Summary Skeleton */}
+          <div className="rounded-2xl p-6 flex flex-col items-start min-w-[260px] min-h-[260px] bg-[linear-gradient(180deg,rgba(106,27,154,0.03)_0%,rgba(211,47,47,0.03)_100%)]">
+            <div className="mb-2 font-bold text-lg">
+              <Skeleton width="w-36" height="h-6" />
+            </div>
+            <div className="text-[#D32F2F] font-semibold mb-2 text-lg">
+              <Skeleton width="w-32" height="h-6" />
+            </div>
+            <div className="w-full">
+              <div className="w-full h-40">
+                {/* Weekly chart component has its own skeleton — but show smaller blocks for immediate UX */}
+                <div className="flex items-end justify-between w-full h-full px-2">
+                  {[...Array(7)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center w-8">
+                      <div
+                        className={`w-3.5 bg-gray-200 rounded-lg animate-pulse mb-2`}
+                        style={{
+                          height: `${40 + (i % 3) * 10}px`,
+                          borderRadius: 16,
+                        }}
+                      />
+                      <div className="w-3 h-3 rounded-full mb-1 bg-gray-200 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Cards skeleton */}
+          <div className="col-span-1 flex flex-col gap-4 w-full">
+            <div className="rounded-2xl p-5 flex flex-col min-w-[260px] min-h-[120px] bg-[linear-gradient(180deg,rgba(106,27,154,0.03)_0%,rgba(211,47,47,0.03)_100%)]">
+              <div className="flex items-center gap-2 mb-1">
+                <Skeleton width="w-8" height="h-8" rounded="rounded-lg" />
+                <Skeleton width="w-40" height="h-6" />
+              </div>
+              <div className="text-xl font-bold mb-1">
+                <Skeleton width="w-24" height="h-8" />
+              </div>
+            </div>
+            <div className="flex gap-4 mt-4">
+              {[1, 2].map((_, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl p-5 flex flex-col min-w-[180px] min-h-[120px] bg-[linear-gradient(180deg,rgba(106,27,154,0.03)_0%,rgba(211,47,47,0.03)_100%)]"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Skeleton width="w-6" height="h-6" rounded="rounded-lg" />
+                    <Skeleton width="w-16" height="h-4" />
+                  </div>
+                  <div className="text-xl font-bold mb-1">
+                    <Skeleton width="w-20" height="h-8" />
+                  </div>
+                  <div className="text-sm font-semibold">
+                    <Skeleton width="w-32" height="h-4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Layout-specific classes
@@ -188,29 +175,33 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
       </div>
       <div className={containerClass}>
         {/* Today's Progress (Circular Progress) */}
-        <div className="rounded-2xl p-6 flex flex-col items-center min-w-[260px] min-h-[260px] relative bg-[linear-gradient(180deg,rgba(106,27,154,0.1)_0%,rgba(211,47,47,0.1)_100%)]">
-          <div className="mb-2 font-bold text-lg text-[#000]">
-            Today's Progress
-          </div>
-          <CircularProgress
-            percent={getPercent(
-              workSummary.today.workedTime,
-              workSummary.today.remainingTime
-            )}
-            workedTime={workSummary.today.workedTime}
-          />
-          <div className="flex items-center gap-1 mt-2 text-base font-medium">
-            <img src={clockIcon} />
-            <span>{workSummary.today.remainingTime} Left</span>
-          </div>
-        </div>
+        {(() => {
+          const workedTime =
+            apiSummary?.todayWorkingHour !== undefined
+              ? formatHours(apiSummary.todayWorkingHour)
+              : "00:00 hrs";
+          const remainingTime = "00:00 hrs";
+          return <TodayProgress today={{ workedTime, remainingTime }} />;
+        })()}
         {/* Weekly Summary (Bar Chart*/}
         <div className="bg-[linear-gradient(180deg,rgba(106,27,154,0.1)_0%,rgba(211,47,47,0.1)_100%)] rounded-2xl p-6 flex flex-col items-start min-w-[260px] min-h-[260px]">
           <div className="mb-2 font-bold text-lg ">Weekly Summary</div>
+          {/** compute total orders for the week from API summary or workSummary.weekly */}
           <div className="text-[#D32F2F] font-semibold mb-2 text-lg">
-            9 600 XOF
+            {(() => {
+              const totalFromSummary =
+                apiSummary?.totalOrderServed ?? weeklyResp?.total_orders;
+              if (typeof totalFromSummary === "number")
+                return `${totalFromSummary} Orders`;
+              const total = Object.values((apiChart ?? {}) || {}).reduce(
+                (sum: number, item: { orders?: number }) =>
+                  sum + (item?.orders || 0),
+                0
+              );
+              return `${total} Orders`;
+            })()}
           </div>
-          <WeeklyBarChart data={workSummary.weekly} />
+          <WeeklyChart employeeId={user?.Employee_id} initialData={apiChart} />
         </div>
         {/* Last three cards together in a row for desktop */}
         {layout === "desktop" ? (
@@ -224,12 +215,12 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
                 />
                 <span className="font-bold text-lg">Total Customer</span>
                 <span className="text-green-600 text-xs font-semibold ml-2">
-                  +{workSummary.growthPercent}%{" "}
+                  +{growthPercent}%{" "}
                   <span className="inline-block align-middle">↑</span>
                 </span>
               </div>
               <div className="text-xl font-bold mb-1 text-primary-gradient">
-                {workSummary.totalCustomers}
+                {apiSummary?.totalCustomer ?? 0}
               </div>
               <div className="flex flex-wrap gap-2 text-sm mt-2">
                 <span className="font-bold text-black/80">• Total</span>
@@ -252,12 +243,14 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
                       className="w-6 h-6 bg-primary-gradient p-0.5 rounded-lg"
                     />
                     <span className="text-green-600 text-xs font-semibold">
-                      +{workSummary.growthPercent}%{" "}
+                      +{growthPercent}%{" "}
                       <span className="inline-block align-middle">↑</span>
                     </span>
                   </div>
                   <div className="text-xl font-bold mb-1 text-primary-gradient">
-                    {workSummary.totalOrdersServed}
+                    {apiSummary?.totalOrderServed ??
+                      weeklyResp?.total_orders ??
+                      0}
                   </div>
                   <div className="text-sm font-semibold">
                     Total order Served
@@ -280,10 +273,10 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-bold text-primary-gradient">
-                  {workSummary.totalCustomers}
+                  {apiSummary?.totalCustomer ?? 0}
                 </span>
                 <span className="text-green-600 text-xs font-semibold">
-                  +{workSummary.growthPercent}%{" "}
+                  +{growthPercent}%{" "}
                   <span className="inline-block align-middle">↑</span>
                 </span>
               </div>
@@ -306,10 +299,12 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-bold text-primary-gradient">
-                  {workSummary.totalCustomers}
+                  {apiSummary?.totalOrderServed ??
+                    weeklyResp?.total_orders ??
+                    0}
                 </span>
                 <span className="text-green-600 text-xs font-semibold">
-                  +{workSummary.growthPercent}%{" "}
+                  +{growthPercent}%{" "}
                   <span className="inline-block align-middle">↑</span>
                 </span>
               </div>
@@ -332,10 +327,10 @@ const WorkSummary: React.FC<WorkSummaryProps> = ({ layout }) => {
               </div>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-lg font-bold text-primary-gradient">
-                  {workSummary.totalTips}
+                  {totalTips}
                 </span>
                 <span className="text-green-600 text-xs font-semibold">
-                  +{workSummary.growthPercent}%{" "}
+                  +{growthPercent}%{" "}
                   <span className="inline-block align-middle">↑</span>
                 </span>
               </div>
