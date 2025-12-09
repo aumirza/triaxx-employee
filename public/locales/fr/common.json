@@ -138,6 +138,7 @@
     "floorLabel": "Étage:",
     "tableLabel": "Table:",
     "sendToKitchen": "Envoyer en cuisine",
+    "selectTableBeforeAdding": "Veuillez sélectionner une table avant d'ajouter des articles",
     "deleteItem": "Supprimer",
     "startNewOrder": "Démarrer une nouvelle commande",
     "payment": {
@@ -253,6 +254,7 @@
     "back": "Retour",
     "readMore": "Lire la suite",
     "size": "Taille",
+    "variants": "Variantes",
     "price": "Prix",
     "addItem": "Ajouter l'article"
   },
@@ -313,7 +315,8 @@
     "subtitle": "Sélectionnez l'étage et le nombre de personnes",
     "selectPersons": "Sélectionnez le nombre de personnes:",
     "selectFloor": "Sélectionnez l'étage:",
-    "selectTable": "Sélectionner la table"
+    "selectTable": "Sélectionner la table",
+    "selectFloorError": "Veuillez sélectionner un étage avant de choisir une table"
   },
   "orderHistory": {
     "title": "Historique des commandes",
