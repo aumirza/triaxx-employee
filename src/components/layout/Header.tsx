@@ -49,9 +49,9 @@ const Header: React.FC = () => {
             alt={t("header.notifications")}
             className="h-6 w-6"
           />
-          <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px] font-bold">
+          {/* <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full flex items-center justify-center text-white text-[8px] font-bold">
             <span className="absolute -top-px">3</span>
-          </div>
+          </div> */}
         </div>
 
         {/* User Profile */}
