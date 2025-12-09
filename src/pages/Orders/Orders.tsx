@@ -55,6 +55,9 @@ const Orders: React.FC = () => {
   const [showAddonsModal, setShowAddonsModal] = useState(false);
   const [modalItem, setModalItem] = useState(null as any);
   const [modalSize, setModalSize] = useState("M");
+  const [modalVariantId, setModalVariantId] = useState<number | string | null>(
+    null
+  );
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showOrderSentPanel, setShowOrderSentPanel] = useState(false);
   const navigate = useNavigate();
@@ -62,7 +65,7 @@ const Orders: React.FC = () => {
 
   // Table selection state
   const [persons, setPersons] = useState(1);
-  const [selectedFloor, setSelectedFloor] = useState("F-01");
+  const [selectedFloor, setSelectedFloor] = useState("");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [showFloorPersonsPanel, setShowFloorPersonsPanel] = useState(false);
   const [orderSending, setOrderSending] = useState(false);
@@ -297,37 +300,22 @@ const Orders: React.FC = () => {
   const handleAddToCart = (item: any) => {
     console.log("[Orders] handleAddToCart invoked for item:", item?.itemId);
     const walkthrough = useWalkthroughStore.getState();
-    if (!currentOrder && !selectedTable && !showFloorPersonsPanel) {
-      setTimeout(() => {
-        setModalItem(item);
-        const showSizeModal = itemHasSize(item) || walkthrough.isActive; // Force size modal in walkthrough
-        console.log(
-          `[Orders] showSizeModal=${showSizeModal} itemHasSize=${itemHasSize(
-            item
-          )} walkthrough.isActive=${walkthrough.isActive}`
-        );
-        if (showSizeModal) {
-          setShowItemDetailsModal(true);
-        } else {
-          setShowAddonsModal(true);
-        }
-        setShowFloorPersonsPanel(true);
-        // If in walkthrough order-item step, advance the walkthrough to highlight the modal/dialog
-        const step = walkthrough.steps[walkthrough.currentStep];
-        if (
-          walkthrough.isActive &&
-          (step?.selector === ".order-item-first" ||
-            step?.selector === ".order-item-second" ||
-            step?.selector === ".order-item-third")
-        ) {
-          // Advance to the next walkthrough step which should be the modal highlight
-          useWalkthroughStore.getState().next();
-        }
-      }, 100);
+
+    // Disable adding/selecting items when no table has been selected
+    // Guide the user to select a table by opening the floor/persons panel
+    if (!currentOrder && !selectedTable) {
+      setShowFloorPersonsPanel(true);
+      setFeedback(
+        t("orders.selectTableBeforeAdding") ||
+          "Please select a table before adding items"
+      );
+      setTimeout(() => setFeedback(""), 2000);
       return;
     }
+
     setModalItem(item);
-    const showSizeModal = itemHasSize(item) || walkthrough.isActive; // Force size modal in walkthrough
+    // Keep the modal flow for size/addons selection as before
+    const showSizeModal = true;
     console.log(
       `[Orders] showSizeModal=${showSizeModal} itemHasSize=${itemHasSize(
         item
@@ -378,6 +366,7 @@ const Orders: React.FC = () => {
     const customizedItem = {
       ...modalItem,
       size: modalSize,
+      item_Variants_id: modalVariantId,
       addOns: addons.map((label, idx) => {
         const found = dummyAddons.find((a) => a.label === label);
         return {
@@ -488,7 +477,9 @@ const Orders: React.FC = () => {
           item.addOns && item.addOns.length > 0
             ? parseInt(item.addOns[0].id)
             : undefined,
-        item_Variants_id: item.size ? 1 : undefined, // You may need to map size to variant ID
+        item_Variants_id: item.item_Variants_id
+          ? parseInt(String(item.item_Variants_id))
+          : undefined,
       }));
 
       // Create POS order request
@@ -526,7 +517,7 @@ const Orders: React.FC = () => {
     setShowOrderSentPanel(false);
     setSelectedTable(null);
     setPersons(1);
-    setSelectedFloor("F-01");
+    setSelectedFloor("");
     setSelectedCategory("all");
     setSelectedItemTypeId(null);
     const walkthrough = useWalkthroughStore.getState();
@@ -535,6 +526,19 @@ const Orders: React.FC = () => {
 
   // Table selection UI logic
   const handleSelectTable = () => {
+    // Validate floor selection before navigating to table selection.
+    if (
+      !selectedFloor ||
+      (typeof selectedFloor === "string" && selectedFloor.trim() === "")
+    ) {
+      setFeedback(
+        t("floor.selectFloorError") ||
+          "Please select a floor before choosing a table"
+      );
+      setTimeout(() => setFeedback(""), 2000);
+      return;
+    }
+
     navigate("/table", { state: { persons, floor: selectedFloor } });
     const walkthrough = useWalkthroughStore.getState();
     const step = walkthrough.steps[walkthrough.currentStep];
@@ -1268,8 +1272,9 @@ const Orders: React.FC = () => {
         open={showItemDetailsModal}
         item={modalItem}
         onClose={() => setShowItemDetailsModal(false)}
-        onSelect={(size) => {
-          setModalSize(size);
+        onSelect={(variant) => {
+          setModalSize(variant.label);
+          setModalVariantId(variant.id ?? null);
           setShowItemDetailsModal(false);
           const walkthrough = useWalkthroughStore.getState();
           const step = walkthrough.steps[walkthrough.currentStep];
