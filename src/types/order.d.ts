@@ -1,8 +1,15 @@
-export type OrderStatus = 'Pending' | 'Confirmed' | 'Preparing' | 'Ready' | 'Completed' | 'Cancelled'|'Served';
-export type OrderType = 'Dine-In' | 'Takeout' | 'Delivery';
-export type PaymentMethod = 'Cash' | 'Credit Card' | 'Online' | 'Other';
-export type PaymentStatus = 'Unpaid' | 'Paid' | 'Refunded';
-export type PreparationStation = 'Kitchen' | 'Bar' | 'Counter';
+export type OrderStatus =
+  | "Pending"
+  | "Confirmed"
+  | "Preparing"
+  | "Ready"
+  | "Completed"
+  | "Cancelled"
+  | "Served";
+export type OrderType = "Dine-In" | "Takeout" | "Delivery";
+export type PaymentMethod = "Cash" | "Credit Card" | "Online" | "Other";
+export type PaymentStatus = "Unpaid" | "Paid" | "Refunded";
+export type PreparationStation = "Kitchen" | "Bar" | "Counter";
 
 export interface TableInfo {
   tableId: string;
@@ -27,7 +34,8 @@ export interface PricingSummary {
 }
 
 export interface PaymentDetails {
-  method: PaymentMethod;
+  // API may return arbitrary labels; accept string to avoid build-time mismatch
+  method: string;
   status: PaymentStatus;
   transactionId?: string;
   kitchenNotes?: string;
@@ -43,7 +51,7 @@ export interface OrderItem {
   itemId: string;
   name: string;
   quantity: number;
-  description?:string;
+  description?: string;
   price: number;
   availability: boolean;
   itemType: string;

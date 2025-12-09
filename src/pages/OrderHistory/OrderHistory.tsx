@@ -532,11 +532,11 @@ const OrderHistory = () => {
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         total={selectedOrder?.pricingSummary?.totalAmount || 0}
-        onConfirm={async (method) => {
+        onConfirm={async (method: any) => {
           if (selectedOrder?.orderId) {
             await orderApi.updateOrder(selectedOrder.orderId, {
               paymentDetails: {
-                method,
+                method: method as any,
                 status: "Paid",
                 transactionId: `TXN-${Date.now()}`,
               },

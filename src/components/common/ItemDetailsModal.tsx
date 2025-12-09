@@ -266,7 +266,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               };
               if (!sizeOptions || sizeOptions.length === 0) {
                 // No variants from API — send a sensible fallback: no id, use item's size if available
-                const itemRecord = item as Record<string, unknown>;
+                const itemRecord = item as unknown as Record<string, unknown>;
                 const fallbackLabel =
                   (itemRecord["item-size"] as string | undefined) ??
                   (itemRecord["size"] as string | undefined) ??
