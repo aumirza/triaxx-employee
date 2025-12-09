@@ -128,7 +128,7 @@
     "addedToOrder": "{{name}} added to order!",
     "nextOrder": "Next Order",
     "tapToSelectTable": "Tap to Select Table",
-    "andStartOrder": "&\\nStart Order",
+    "andStartOrder": "& Start Order",
     "startOrder": {
       "title": "Start Order",
       "subtitle": "Floor, Table, Person Display",
@@ -138,6 +138,7 @@
     "floorLabel": "Floor:",
     "tableLabel": "Table:",
     "sendToKitchen": "Send to Kitchen",
+    "selectTableBeforeAdding": "Please select a table before adding items",
     "deleteItem": "Delete",
     "startNewOrder": "Start new Order",
     "tables": {
@@ -331,6 +332,7 @@
     "back": "Back",
     "readMore": "Read More",
     "size": "Size",
+    "variants": "Variants",
     "price": "Price",
     "addItem": "Add Item"
   },
@@ -391,7 +393,8 @@
     "subtitle": "Select Floor and Persons",
     "selectPersons": "Select Persons:",
     "selectFloor": "Select Floor:",
-    "selectTable": "Select Table"
+    "selectTable": "Select Table",
+    "selectFloorError": "Please select a floor before choosing a table"
   },
   "orderHistory": {
     "dateFilter": {
